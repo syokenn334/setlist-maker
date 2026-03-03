@@ -1,7 +1,7 @@
 .header {
   height: 56px;
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   gap: 16px;
   padding-bottom: 10px;
   border-bottom: 2px solid var(--sl-header-border);
@@ -13,27 +13,36 @@
   font-size: 22px;
   font-weight: 600;
   color: var(--sl-event);
+  line-height: 1;
 }
 
 .date {
   font-size: 17px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+  padding-bottom: 1px;
 }
 
 .dj {
   font-size: 16px;
   color: var(--sl-dj);
+  line-height: 1;
+  padding-bottom: 1px;
 }
 
 .total {
   font-size: 15px;
   color: var(--sl-total);
   margin-left: auto;
+  line-height: 1;
+  padding-bottom: 2px;
 }
 
 .page {
   font-size: 15px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+  padding-bottom: 2px;
 }

@@ -20,13 +20,39 @@ export function useExport() {
       scale: 2,
       useCORS: true,
       backgroundColor: null,
-      onclone: (_doc, clonedEl) => {
+      onclone: (doc, clonedEl) => {
         let parent = clonedEl.parentElement;
         while (parent) {
           parent.style.transform = 'none';
           parent.style.overflow = 'visible';
           parent = parent.parentElement;
         }
+
+        // html2canvas doesn't render text-overflow: ellipsis.
+        // Manually truncate overflowing text with "…".
+        const getStyle = doc.defaultView?.getComputedStyle.bind(doc.defaultView)
+          ?? window.getComputedStyle;
+        clonedEl.querySelectorAll('*').forEach((node) => {
+          if (!(node instanceof HTMLElement)) return;
+          const cs = getStyle(node);
+          if (cs.textOverflow !== 'ellipsis' || cs.overflow !== 'hidden') return;
+          if (node.scrollWidth <= node.clientWidth) return;
+
+          const original = node.textContent ?? '';
+          node.style.textOverflow = 'clip';
+          let lo = 0;
+          let hi = original.length;
+          while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2);
+            node.textContent = original.slice(0, mid) + '\u2026';
+            if (node.scrollWidth > node.clientWidth) {
+              hi = mid - 1;
+            } else {
+              lo = mid;
+            }
+          }
+          node.textContent = original.slice(0, lo) + '\u2026';
+        });
       },
     });
     return canvas.toDataURL('image/png');
