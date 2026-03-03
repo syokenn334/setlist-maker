@@ -202,10 +202,9 @@ export default function App() {
     <div className={styles.app}>
       <motion.aside
         className={styles.sidebar}
-        variants={isMobile ? undefined : sidebarVariants}
-        animate={isMobile ? undefined : sidebarOpen ? 'open' : 'closed'}
+        variants={sidebarVariants}
+        animate={sidebarOpen ? 'open' : 'closed'}
         initial={false}
-        style={isMobile ? { width: '100%', padding: '16px' } : undefined}
       >
         <div className={styles.header}>
           <AnimatePresence>
