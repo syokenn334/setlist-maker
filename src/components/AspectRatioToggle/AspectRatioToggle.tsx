@@ -19,6 +19,13 @@ export function AspectRatioToggle({ value, onChange, disabled = false }: AspectR
           16:9
         </button>
         <button
+          className={`${styles.btn} ${value === '7:8' ? styles.active : ''}`}
+          onClick={() => onChange('7:8')}
+          disabled={disabled}
+        >
+          7:8
+        </button>
+        <button
           className={`${styles.btn} ${value === '9:16' ? styles.active : ''}`}
           onClick={() => onChange('9:16')}
           disabled={disabled}

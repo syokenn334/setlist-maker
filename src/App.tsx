@@ -121,7 +121,7 @@ export default function App() {
 
   const handleAspectRatioChange = useCallback((value: AspectRatio) => {
     setAspectRatio(value);
-    if (value === '9:16') setColumnCount(1);
+    if (value === '9:16' || value === '7:8') setColumnCount(1);
     setCurrentPage(0);
   }, []);
 

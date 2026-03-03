@@ -10,37 +10,37 @@
 }
 
 .event {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--sl-event);
   line-height: 1;
 }
 
 .date {
-  font-size: 17px;
+  font-size: 18px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
   line-height: 1;
-  padding-bottom: 1px;
+  padding-bottom: 2px;
 }
 
 .dj {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--sl-dj);
   line-height: 1;
-  padding-bottom: 1px;
+  padding-bottom: 2px;
 }
 
 .total {
-  font-size: 15px;
-  color: var(--sl-total);
+  font-size: 18px;
+  color: var(--sl-dj);
   margin-left: auto;
   line-height: 1;
   padding-bottom: 2px;
 }
 
 .page {
-  font-size: 15px;
+  font-size: 18px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
   line-height: 1;

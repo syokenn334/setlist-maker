@@ -7,6 +7,11 @@ interface TrackRowProps {
   layout: LayoutInfo;
 }
 
+// Base row height at 18 rows (used as scale reference)
+const BASE_ROW_HEIGHT = 42;
+const BASE_TITLE_SIZE = 14;
+const BASE_SUB_SIZE = 12;
+
 export function TrackRow({ track, index, layout }: TrackRowProps) {
   const isOdd = index % 2 === 0; // 0-indexed; first row = visual odd
   const artSize = layout.rowHeight - 6;
@@ -15,6 +20,11 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
   const album = track.album ?? '';
   const sub = album ? `${artist} \u00b7 ${album}` : artist;
   const bpm = track.bpm ? String(Math.round(track.bpm)) : '';
+
+  const rawScale = layout.rowHeight / BASE_ROW_HEIGHT;
+  const scale = 1 + (rawScale - 1) * 0.35;
+  const titleSize = Math.round(BASE_TITLE_SIZE * scale);
+  const subSize = Math.round(BASE_SUB_SIZE * scale);
 
   return (
     <div
@@ -36,8 +46,8 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
         )}
       </div>
       <div className={styles.info}>
-        <div className={styles.title}>{track.title ?? 'Unknown'}</div>
-        <div className={styles.sub}>{sub}</div>
+        <div className={styles.title} style={{ fontSize: titleSize }}>{track.title ?? 'Unknown'}</div>
+        <div className={styles.sub} style={{ fontSize: subSize }}>{sub}</div>
       </div>
       <div className={styles.bpm}>{bpm}</div>
       <div className={styles.time}>{track.time ?? ''}</div>

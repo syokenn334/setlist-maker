@@ -14,8 +14,8 @@
 
 .num {
   width: 24px;
-  text-align: right;
-  font-size: 13px;
+  text-align: center;
+  font-size: 16px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--sl-num);
   flex-shrink: 0;
@@ -66,7 +66,7 @@
 .bpm {
   width: 42px;
   text-align: right;
-  font-size: 12px;
+  font-size: 14px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--sl-bpm);
   flex-shrink: 0;
@@ -75,7 +75,7 @@
 .time {
   width: 36px;
   text-align: right;
-  font-size: 12px;
+  font-size: 14px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--sl-time);
   flex-shrink: 0;
@@ -83,7 +83,7 @@
 
 .genre {
   width: 72px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--sl-genre-text);
   background: var(--sl-genre-bg);
   border-radius: 3px;

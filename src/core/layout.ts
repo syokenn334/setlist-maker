@@ -32,11 +32,12 @@ export interface LayoutInfo {
 
 // --- アスペクト比 ---
 
-export type AspectRatio = '16:9' | '9:16';
+export type AspectRatio = '16:9' | '9:16' | '7:8';
 
 export const CANVAS_SIZES: Record<AspectRatio, { width: number; height: number }> = {
   '16:9': { width: 1600, height: 900 },
   '9:16': { width: 900, height: 1600 },
+  '7:8': { width: 1050, height: 1200 },
 };
 
 /** padding: top 16 + bottom 28 = 44, header 56 + mb 12 = 68 */
