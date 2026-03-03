@@ -40,7 +40,7 @@ export function Canvas({ template, backgroundImage, width, height, children }: C
         <>
           <div
             className={styles.backgroundImage}
-            style={{ backgroundImage: `url(${backgroundImage})` }}
+            style={{ backgroundImage: `url("${backgroundImage}")` }}
           />
           <div className={styles.overlay} />
         </>

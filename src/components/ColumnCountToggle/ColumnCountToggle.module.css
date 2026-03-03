@@ -38,3 +38,8 @@
   color: #fff;
   font-weight: 600;
 }
+
+.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}

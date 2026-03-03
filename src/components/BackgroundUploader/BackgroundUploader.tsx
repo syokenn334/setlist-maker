@@ -10,9 +10,13 @@ interface BackgroundUploaderProps {
 export function BackgroundUploader({ hasBackground, onUpload, onClear }: BackgroundUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > MAX_FILE_SIZE) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -25,7 +29,6 @@ export function BackgroundUploader({ hasBackground, onUpload, onClear }: Backgro
 
   return (
     <div className={styles.uploader}>
-      <div className={styles.label}>Background Image</div>
       <div className={styles.row}>
         <button className={styles.uploadBtn} onClick={() => inputRef.current?.click()}>
           {hasBackground ? '画像を変更' : '画像を選択'}

@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { parseFile } from '@core/parser.ts';
 import type { Track } from '@core/parser.ts';
 import type { SetlistMetadata, TrackWithArtwork, AspectRatio } from '@core/layout.ts';
@@ -30,6 +31,35 @@ function formatToday(): string {
   return `${y}.${m}.${day}`;
 }
 
+const sidebarVariants = {
+  open: {
+    width: 'var(--sidebar-width)',
+    padding: '20px 16px',
+    transition: { type: 'spring', stiffness: 300, damping: 30 },
+  },
+  closed: {
+    width: 52,
+    padding: '20px 8px',
+    transition: { type: 'spring', stiffness: 300, damping: 30 },
+  },
+};
+
+const fadeSlide = {
+  initial: { opacity: 0, height: 0 },
+  animate: { opacity: 1, height: 'auto', transition: { duration: 0.25 } },
+  exit: { opacity: 0, height: 0, transition: { duration: 0.2 } },
+};
+
+const sectionStagger = {
+  animate: { transition: { staggerChildren: 0.06 } },
+};
+
+const sectionItem = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
+};
+
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('idle');
   const [fileName, setFileName] = useState<string | null>(null);
@@ -45,6 +75,7 @@ export default function App() {
   const [columnCount, setColumnCount] = useState<1 | 2>(2);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [currentPage, setCurrentPage] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const previewRef = useRef<SetlistPreviewHandle>(null);
   const artworkFetcher = useArtworkFetcher();
@@ -69,9 +100,11 @@ export default function App() {
   }, [displayTracks, currentPage, tracksPerPage, pageCount]);
 
   // Clamp currentPage when pageCount shrinks
-  if (currentPage >= pageCount && pageCount > 0) {
-    setCurrentPage(pageCount - 1);
-  }
+  useEffect(() => {
+    if (currentPage >= pageCount && pageCount > 0) {
+      setCurrentPage(pageCount - 1);
+    }
+  }, [currentPage, pageCount]);
 
   const handleRowsPerPageChange = useCallback((value: number) => {
     setRowsPerPage(value);
@@ -119,10 +152,12 @@ export default function App() {
 
   // Watch fetcher completion to transition phase
   const prevFetchingRef = useRef(false);
-  if (prevFetchingRef.current && !artworkFetcher.isFetching && phase === 'fetching') {
-    setPhase('ready');
-  }
-  prevFetchingRef.current = artworkFetcher.isFetching;
+  useEffect(() => {
+    if (prevFetchingRef.current && !artworkFetcher.isFetching && phase === 'fetching') {
+      setPhase('ready');
+    }
+    prevFetchingRef.current = artworkFetcher.isFetching;
+  }, [artworkFetcher.isFetching, phase]);
 
   const buildExportName = useCallback(() => {
     const title = metadata.eventName || 'setlist';
@@ -152,71 +187,150 @@ export default function App() {
 
   return (
     <div className={styles.app}>
-      <aside className={styles.sidebar}>
-        <div className={styles.logo}>setlist-maker</div>
-
-        <DropZone onFile={handleFile} currentFileName={fileName} />
-
-        {error && <div className={styles.error}>{error}</div>}
-
-        {artworkFetcher.isFetching && (
-          <ProgressBar progress={artworkFetcher.progress} total={artworkFetcher.total} />
-        )}
-
-        {showPreview && (
-          <>
-            <div className={styles.section}>
-              <MetadataEditor metadata={metadata} onChange={setMetadata} />
-            </div>
-
-            <TemplatePicker current={template} onChange={setTemplate} />
-
-            <BackgroundUploader
-              hasBackground={backgroundImage !== null}
-              onUpload={setBackgroundImage}
-              onClear={() => setBackgroundImage(null)}
-            />
-
-            <RowsPerPageSlider value={rowsPerPage} onChange={handleRowsPerPageChange} />
-
-            <ColumnCountToggle value={columnCount} onChange={handleColumnCountChange} />
-
-            {columnCount === 1 && (
-              <AspectRatioToggle value={aspectRatio} onChange={handleAspectRatioChange} />
+      <motion.aside
+        className={styles.sidebar}
+        variants={sidebarVariants}
+        animate={sidebarOpen ? 'open' : 'closed'}
+        initial={false}
+      >
+        <div className={styles.header}>
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.div
+                className={styles.logo}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                SETLIST MAKER
+              </motion.div>
             )}
+          </AnimatePresence>
+          <motion.button
+            className={styles.toggleBtn}
+            onClick={() => setSidebarOpen((v) => !v)}
+            aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+            whileTap={{ scale: 0.9 }}
+          >
+            {sidebarOpen ? '\u00AB' : '\u00BB'}
+          </motion.button>
+        </div>
 
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              className={styles.sidebarContent}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.2, delay: 0.1 } }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+            >
+              <DropZone onFile={handleFile} currentFileName={fileName} />
+
+              <AnimatePresence>
+                {showPreview && (
+                  <motion.div {...fadeSlide}>
+                    <ExportButton
+                      disabled={phase !== 'ready'}
+                      exporting={exporting}
+                      onClick={handleExport}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    className={styles.error}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {artworkFetcher.isFetching && (
+                  <motion.div {...fadeSlide}>
+                    <ProgressBar progress={artworkFetcher.progress} total={artworkFetcher.total} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {showPreview && (
+                  <motion.div
+                    className={styles.sections}
+                    variants={sectionStagger}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <motion.div className={styles.section} variants={sectionItem}>
+                      <div className={styles.sectionTitle}>メタ情報</div>
+                      <div className={styles.sectionBody}>
+                        <MetadataEditor metadata={metadata} onChange={setMetadata} />
+                      </div>
+                    </motion.div>
+
+                    <motion.div className={styles.section} variants={sectionItem}>
+                      <div className={styles.sectionTitle}>背景</div>
+                      <div className={styles.sectionBody}>
+                        <TemplatePicker current={template} onChange={setTemplate} />
+                        <BackgroundUploader
+                          hasBackground={backgroundImage !== null}
+                          onUpload={setBackgroundImage}
+                          onClear={() => setBackgroundImage(null)}
+                        />
+                      </div>
+                    </motion.div>
+
+                    <motion.div className={styles.section} variants={sectionItem}>
+                      <div className={styles.sectionTitle}>レイアウト</div>
+                      <div className={styles.sectionBody}>
+                        <RowsPerPageSlider value={rowsPerPage} onChange={handleRowsPerPageChange} />
+                        <ColumnCountToggle value={columnCount} onChange={handleColumnCountChange} />
+                        <AspectRatioToggle
+                          value={aspectRatio}
+                          onChange={handleAspectRatioChange}
+                          disabled={columnCount === 2}
+                        />
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.aside>
+
+      <main className={styles.main}>
+        {showPreview ? (
+          <>
             <PageNav
               currentPage={currentPage}
               pageCount={pageCount}
               onPageChange={setCurrentPage}
             />
-
-            <div className={styles.spacer} />
-
-            <ExportButton
-              disabled={phase !== 'ready'}
-              exporting={exporting}
-              onClick={handleExport}
+            <SetlistPreview
+              ref={previewRef}
+              tracks={pageTracks}
+              metadata={metadata}
+              template={template}
+              backgroundImage={backgroundImage}
+              rowsPerPage={rowsPerPage}
+              columnCount={columnCount}
+              aspectRatio={aspectRatio}
+              pageIndex={currentPage}
+              pageCount={pageCount}
+              totalTrackCount={displayTracks.length}
             />
           </>
-        )}
-      </aside>
-
-      <main className={styles.main}>
-        {showPreview ? (
-          <SetlistPreview
-            ref={previewRef}
-            tracks={pageTracks}
-            metadata={metadata}
-            template={template}
-            backgroundImage={backgroundImage}
-            rowsPerPage={rowsPerPage}
-            columnCount={columnCount}
-            aspectRatio={aspectRatio}
-            pageIndex={currentPage}
-            pageCount={pageCount}
-            totalTrackCount={displayTracks.length}
-          />
         ) : (
           <div className={styles.empty}>
             <div className={styles.emptyTitle}>Setlist Maker</div>

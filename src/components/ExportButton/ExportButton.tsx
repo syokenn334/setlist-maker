@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import styles from './ExportButton.module.css';
 
 interface ExportButtonProps {
@@ -7,13 +8,17 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ disabled, exporting, onClick }: ExportButtonProps) {
+  const isDisabled = disabled || exporting;
+
   return (
-    <button
+    <motion.button
       className={styles.button}
-      disabled={disabled || exporting}
+      disabled={isDisabled}
       onClick={onClick}
+      whileHover={isDisabled ? undefined : { scale: 1.02 }}
+      whileTap={isDisabled ? undefined : { scale: 0.97 }}
     >
       {exporting ? 'Exporting...' : 'PNG ダウンロード'}
-    </button>
+    </motion.button>
   );
 }

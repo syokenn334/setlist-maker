@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { motion } from 'framer-motion';
 import type { TrackWithArtwork, LayoutInfo, SetlistMetadata, AspectRatio } from '@core/layout.ts';
 import { calculateLayout, calculatePageLayout, splitTracks, CANVAS_SIZES } from '@core/layout.ts';
 import type { SetlistTemplate } from '../templates/index.ts';
@@ -25,6 +26,8 @@ interface SetlistPreviewProps {
 export interface SetlistPreviewHandle {
   getCanvasElement: () => HTMLDivElement | null;
 }
+
+const scalerTransition = { type: 'spring' as const, stiffness: 200, damping: 25 };
 
 export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewProps>(
   function SetlistPreview({ tracks, metadata, template, backgroundImage, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount }, ref) {
@@ -61,13 +64,14 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
 
     return (
       <div className={styles.wrapper} ref={wrapperRef}>
-        <div
+        <motion.div
           className={styles.scaler}
-          style={{
-            transform: `scale(${scale})`,
+          animate={{
+            scale,
             width: canvasSize.width,
             height: canvasSize.height,
           }}
+          transition={scalerTransition}
         >
           <div ref={canvasRef}>
             <Canvas template={template} backgroundImage={backgroundImage} width={canvasSize.width} height={canvasSize.height}>
@@ -97,7 +101,7 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
               <Brand />
             </Canvas>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }

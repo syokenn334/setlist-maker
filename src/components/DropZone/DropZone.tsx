@@ -33,7 +33,7 @@ export function DropZone({ onFile, currentFileName }: DropZoneProps) {
     e.stopPropagation();
     setActive(false);
     const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
+    if (file && file.name.endsWith('.txt')) onFile(file);
   }, [onFile]);
 
   const handleClick = () => inputRef.current?.click();

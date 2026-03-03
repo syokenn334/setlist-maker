@@ -74,7 +74,7 @@ export function useArtworkFetcher() {
             controller.signal.addEventListener('abort', () => {
               clearTimeout(timer);
               resolve();
-            });
+            }, { once: true });
           });
         }
       }

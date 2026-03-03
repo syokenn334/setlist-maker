@@ -9,7 +9,7 @@ export function RowsPerPageSlider({ value, onChange }: RowsPerPageSliderProps) {
   return (
     <div className={styles.container}>
       <div className={styles.label}>
-        行数 <span className={styles.value}>{value}</span>
+        <span className={styles.value}>{value}</span>
       </div>
       <input
         type="range"

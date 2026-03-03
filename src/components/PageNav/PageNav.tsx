@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import styles from './PageNav.module.css';
 
 interface PageNavProps {
@@ -7,16 +8,21 @@ interface PageNavProps {
 }
 
 export function PageNav({ currentPage, pageCount, onPageChange }: PageNavProps) {
-  if (pageCount <= 1) return null;
+  const hidden = pageCount <= 1;
 
   return (
-    <div className={styles.nav}>
+    <motion.div
+      className={styles.nav}
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ duration: 0.2 }}
+      style={{ pointerEvents: hidden ? 'none' : 'auto' }}
+    >
       <button
         className={styles.btn}
         disabled={currentPage === 0}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        ‹ 前へ
+        &lsaquo; 前へ
       </button>
       <span className={styles.indicator}>
         {currentPage + 1} / {pageCount}
@@ -26,8 +32,8 @@ export function PageNav({ currentPage, pageCount, onPageChange }: PageNavProps) 
         disabled={currentPage === pageCount - 1}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        次へ ›
+        次へ &rsaquo;
       </button>
-    </div>
+    </motion.div>
   );
 }

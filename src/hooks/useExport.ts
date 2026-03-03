@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { flushSync } from 'react-dom';
 import html2canvas from 'html2canvas';
 
 export interface CanvasSize {
@@ -68,9 +69,9 @@ export function useExport() {
       await document.fonts.ready;
 
       for (let i = 0; i < pageCount; i++) {
-        setPage(i);
-        // Allow React to re-render with new page
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        flushSync(() => setPage(i));
+        // Wait one frame for layout/paint after synchronous render
+        await new Promise((r) => requestAnimationFrame(r));
 
         const el = getElement();
         if (!el) continue;

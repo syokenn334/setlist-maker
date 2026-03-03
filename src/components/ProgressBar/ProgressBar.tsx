@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import styles from './ProgressBar.module.css';
 
 interface ProgressBarProps {
@@ -15,7 +16,12 @@ export function ProgressBar({ progress, total }: ProgressBarProps) {
         <span>{progress} / {total}</span>
       </div>
       <div className={styles.track}>
-        <div className={styles.bar} style={{ width: `${pct}%` }} />
+        <motion.div
+          className={styles.bar}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+        />
       </div>
     </div>
   );

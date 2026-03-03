@@ -8,7 +8,6 @@ interface ColumnCountToggleProps {
 export function ColumnCountToggle({ value, onChange }: ColumnCountToggleProps) {
   return (
     <div className={styles.container}>
-      <div className={styles.label}>列数</div>
       <div className={styles.toggle}>
         <button
           className={`${styles.btn} ${value === 1 ? styles.active : ''}`}

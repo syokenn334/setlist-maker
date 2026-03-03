@@ -10,7 +10,6 @@ interface TemplatePickerProps {
 export function TemplatePicker({ current, onChange }: TemplatePickerProps) {
   return (
     <div className={styles.picker}>
-      <div className={styles.label}>Template</div>
       <div className={styles.options}>
         {templates.map((t) => (
           <button
