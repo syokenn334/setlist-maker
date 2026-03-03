@@ -16,6 +16,7 @@ import { TemplatePicker } from './components/TemplatePicker/TemplatePicker.tsx';
 import { BackgroundUploader } from './components/BackgroundUploader/BackgroundUploader.tsx';
 import { ExportButton } from './components/ExportButton/ExportButton.tsx';
 import { RowsPerPageSlider } from './components/RowsPerPageSlider/RowsPerPageSlider.tsx';
+import { OverlayOpacitySlider } from './components/OverlayOpacitySlider/OverlayOpacitySlider.tsx';
 import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
 import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
 import { PageNav } from './components/PageNav/PageNav.tsx';
@@ -71,6 +72,7 @@ export default function App() {
   });
   const [template, setTemplate] = useState<SetlistTemplate>(defaultTemplate);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [overlayOpacity, setOverlayOpacity] = useState(0.8);
   const [rowsPerPage, setRowsPerPage] = useState(18);
   const [columnCount, setColumnCount] = useState<1 | 2>(2);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
@@ -286,6 +288,7 @@ export default function App() {
                           onUpload={setBackgroundImage}
                           onClear={() => setBackgroundImage(null)}
                         />
+                        <OverlayOpacitySlider value={overlayOpacity} onChange={setOverlayOpacity} disabled={backgroundImage === null} />
                       </div>
                     </motion.div>
 
@@ -323,6 +326,7 @@ export default function App() {
               metadata={metadata}
               template={template}
               backgroundImage={backgroundImage}
+              overlayOpacity={overlayOpacity}
               rowsPerPage={rowsPerPage}
               columnCount={columnCount}
               aspectRatio={aspectRatio}

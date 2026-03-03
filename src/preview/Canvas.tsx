@@ -5,6 +5,7 @@ import styles from './Canvas.module.css';
 interface CanvasProps {
   template: SetlistTemplate;
   backgroundImage: string | null;
+  overlayOpacity: number;
   width: number;
   height: number;
   children: ReactNode;
@@ -33,7 +34,7 @@ function templateToVars(t: SetlistTemplate): React.CSSProperties {
   } as React.CSSProperties;
 }
 
-export function Canvas({ template, backgroundImage, width, height, children }: CanvasProps) {
+export function Canvas({ template, backgroundImage, overlayOpacity, width, height, children }: CanvasProps) {
   return (
     <div className={styles.canvas} style={{ ...templateToVars(template), width, height }}>
       {backgroundImage && (
@@ -42,7 +43,7 @@ export function Canvas({ template, backgroundImage, width, height, children }: C
             className={styles.backgroundImage}
             style={{ backgroundImage: `url("${backgroundImage}")` }}
           />
-          <div className={styles.overlay} />
+          <div className={styles.overlay} style={{ opacity: overlayOpacity }} />
         </>
       )}
       <div className={styles.content}>

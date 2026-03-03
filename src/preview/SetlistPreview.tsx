@@ -15,6 +15,7 @@ interface SetlistPreviewProps {
   metadata: SetlistMetadata;
   template: SetlistTemplate;
   backgroundImage: string | null;
+  overlayOpacity: number;
   rowsPerPage?: number;
   columnCount?: 1 | 2;
   aspectRatio?: AspectRatio;
@@ -30,7 +31,7 @@ export interface SetlistPreviewHandle {
 const scalerTransition = { type: 'spring' as const, stiffness: 200, damping: 25 };
 
 export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewProps>(
-  function SetlistPreview({ tracks, metadata, template, backgroundImage, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount }, ref) {
+  function SetlistPreview({ tracks, metadata, template, backgroundImage, overlayOpacity, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount }, ref) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -74,7 +75,7 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
           transition={scalerTransition}
         >
           <div ref={canvasRef}>
-            <Canvas template={template} backgroundImage={backgroundImage} width={canvasSize.width} height={canvasSize.height}>
+            <Canvas template={template} backgroundImage={backgroundImage} overlayOpacity={overlayOpacity} width={canvasSize.width} height={canvasSize.height}>
               <Header
                 metadata={metadata}
                 trackCount={totalTrackCount ?? tracks.length}
