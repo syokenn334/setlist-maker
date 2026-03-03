@@ -93,6 +93,8 @@ export default function App() {
       }
 
       setFileName(file.name);
+      const baseName = file.name.replace(/\.\w+$/, '');
+      setMetadata((prev) => ({ ...prev, eventName: baseName }));
       const bare: TrackWithArtwork[] = result.tracks.map((t: Track) => ({
         ...t,
         artworkUrl: null,
@@ -112,13 +114,18 @@ export default function App() {
   }
   prevFetchingRef.current = artworkFetcher.isFetching;
 
+  const buildExportName = useCallback(() => {
+    const title = metadata.eventName || 'setlist';
+    const dateStr = metadata.date.replace(/\D/g, '');
+    return `${title}_${dateStr}`;
+  }, [metadata.eventName, metadata.date]);
+
   const handleExport = useCallback(() => {
+    const baseName = buildExportName();
     if (pageCount <= 1) {
       const el = previewRef.current?.getCanvasElement() ?? null;
-      const name = fileName?.replace(/\.\w+$/, '') ?? 'setlist';
-      exportPng(el, `${name}.png`);
+      exportPng(el, `${baseName}.png`);
     } else {
-      const baseName = fileName?.replace(/\.\w+$/, '') ?? 'setlist';
       exportAllPages(
         () => previewRef.current?.getCanvasElement() ?? null,
         setCurrentPage,
@@ -126,7 +133,7 @@ export default function App() {
         baseName,
       );
     }
-  }, [fileName, exportPng, exportAllPages, pageCount]);
+  }, [buildExportName, exportPng, exportAllPages, pageCount]);
 
   const showPreview = phase !== 'idle' && displayTracks.length > 0;
 
