@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { parseFile } from '@core/parser.ts';
 import type { Track } from '@core/parser.ts';
-import type { SetlistMetadata, TrackWithArtwork } from '@core/layout.ts';
+import type { SetlistMetadata, TrackWithArtwork, AspectRatio } from '@core/layout.ts';
+import { CANVAS_SIZES } from '@core/layout.ts';
 import type { AppPhase } from './types/index.ts';
 import type { SetlistTemplate } from './templates/index.ts';
 import { defaultTemplate } from './templates/index.ts';
@@ -15,6 +16,7 @@ import { BackgroundUploader } from './components/BackgroundUploader/BackgroundUp
 import { ExportButton } from './components/ExportButton/ExportButton.tsx';
 import { RowsPerPageSlider } from './components/RowsPerPageSlider/RowsPerPageSlider.tsx';
 import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
+import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
 import { PageNav } from './components/PageNav/PageNav.tsx';
 import { SetlistPreview } from './preview/SetlistPreview.tsx';
 import type { SetlistPreviewHandle } from './preview/SetlistPreview.tsx';
@@ -41,6 +43,7 @@ export default function App() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(18);
   const [columnCount, setColumnCount] = useState<1 | 2>(2);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [currentPage, setCurrentPage] = useState(0);
 
   const previewRef = useRef<SetlistPreviewHandle>(null);
@@ -77,6 +80,13 @@ export default function App() {
 
   const handleColumnCountChange = useCallback((value: 1 | 2) => {
     setColumnCount(value);
+    if (value === 2) setAspectRatio('16:9');
+    setCurrentPage(0);
+  }, []);
+
+  const handleAspectRatioChange = useCallback((value: AspectRatio) => {
+    setAspectRatio(value);
+    if (value === '9:16') setColumnCount(1);
     setCurrentPage(0);
   }, []);
 
@@ -120,20 +130,23 @@ export default function App() {
     return `${title}_${dateStr}`;
   }, [metadata.eventName, metadata.date]);
 
+  const canvasSize = CANVAS_SIZES[aspectRatio];
+
   const handleExport = useCallback(() => {
     const baseName = buildExportName();
     if (pageCount <= 1) {
       const el = previewRef.current?.getCanvasElement() ?? null;
-      exportPng(el, `${baseName}.png`);
+      exportPng(el, `${baseName}.png`, canvasSize);
     } else {
       exportAllPages(
         () => previewRef.current?.getCanvasElement() ?? null,
         setCurrentPage,
         pageCount,
         baseName,
+        canvasSize,
       );
     }
-  }, [buildExportName, exportPng, exportAllPages, pageCount]);
+  }, [buildExportName, exportPng, exportAllPages, pageCount, canvasSize]);
 
   const showPreview = phase !== 'idle' && displayTracks.length > 0;
 
@@ -168,6 +181,10 @@ export default function App() {
 
             <ColumnCountToggle value={columnCount} onChange={handleColumnCountChange} />
 
+            {columnCount === 1 && (
+              <AspectRatioToggle value={aspectRatio} onChange={handleAspectRatioChange} />
+            )}
+
             <PageNav
               currentPage={currentPage}
               pageCount={pageCount}
@@ -195,6 +212,7 @@ export default function App() {
             backgroundImage={backgroundImage}
             rowsPerPage={rowsPerPage}
             columnCount={columnCount}
+            aspectRatio={aspectRatio}
             pageIndex={currentPage}
             pageCount={pageCount}
             totalTrackCount={displayTracks.length}

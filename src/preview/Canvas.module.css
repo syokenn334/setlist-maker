@@ -1,6 +1,4 @@
 .canvas {
-  width: 1600px;
-  height: 900px;
   background: var(--sl-canvas-bg);
   font-family: 'Inter', 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   padding: 16px 24px 28px;

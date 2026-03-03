@@ -5,6 +5,8 @@ import styles from './Canvas.module.css';
 interface CanvasProps {
   template: SetlistTemplate;
   backgroundImage: string | null;
+  width: number;
+  height: number;
   children: ReactNode;
 }
 
@@ -31,9 +33,9 @@ function templateToVars(t: SetlistTemplate): React.CSSProperties {
   } as React.CSSProperties;
 }
 
-export function Canvas({ template, backgroundImage, children }: CanvasProps) {
+export function Canvas({ template, backgroundImage, width, height, children }: CanvasProps) {
   return (
-    <div className={styles.canvas} style={templateToVars(template)}>
+    <div className={styles.canvas} style={{ ...templateToVars(template), width, height }}>
       {backgroundImage && (
         <>
           <div

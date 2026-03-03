@@ -10,30 +10,30 @@
 }
 
 .event {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--sl-event);
 }
 
 .date {
-  font-size: 14px;
+  font-size: 17px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .dj {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--sl-dj);
 }
 
 .total {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--sl-total);
   margin-left: auto;
 }
 
 .page {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--sl-date);
   font-family: 'JetBrains Mono', monospace;
 }

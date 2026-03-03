@@ -30,6 +30,22 @@ export interface LayoutInfo {
   rowGap: number;
 }
 
+// --- アスペクト比 ---
+
+export type AspectRatio = '16:9' | '9:16';
+
+export const CANVAS_SIZES: Record<AspectRatio, { width: number; height: number }> = {
+  '16:9': { width: 1600, height: 900 },
+  '9:16': { width: 900, height: 1600 },
+};
+
+/** padding: top 16 + bottom 28 = 44, header 56 + mb 12 = 68 */
+const PADDING_AND_HEADER = 44 + 68;
+
+export function getColumnAreaHeight(aspect: AspectRatio): number {
+  return CANVAS_SIZES[aspect].height - PADDING_AND_HEADER;
+}
+
 // --- レイアウト計算 ---
 
 /** カラムエリアの利用可能高さ (canvas 900 - padding 44 - header 68) */
@@ -47,13 +63,16 @@ export function calculatePageLayout(
   trackCount: number,
   maxRows: number,
   columnCount: 1 | 2,
+  canvasHeight: number = 900,
 ): LayoutInfo {
   const clamped = Math.max(10, Math.min(18, maxRows));
   const rowGap = 2;
 
+  const areaHeight = canvasHeight - PADDING_AND_HEADER;
+
   // 行高は常に maxRows 基準 (エリアいっぱいに広げる)
   const rowHeight = Math.floor(
-    (COLUMN_AREA_HEIGHT - (clamped - 1) * rowGap) / clamped,
+    (areaHeight - (clamped - 1) * rowGap) / clamped,
   );
 
   // 2カラム時は左を maxRows まで埋めてから右に折り返す
@@ -276,7 +295,7 @@ export function generateSetlistHTML(
       text-overflow: ellipsis;
     }
     .sub {
-      font-size: 10px;
+      font-size: 12px;
       color: #999;
       white-space: nowrap;
       overflow: hidden;
@@ -285,7 +304,7 @@ export function generateSetlistHTML(
     .bpm {
       width: 42px;
       text-align: right;
-      font-size: 11px;
+      font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: #e94560;
       flex-shrink: 0;
@@ -293,14 +312,14 @@ export function generateSetlistHTML(
     .time {
       width: 36px;
       text-align: right;
-      font-size: 11px;
+      font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: #777;
       flex-shrink: 0;
     }
     .genre {
       width: 56px;
-      font-size: 9px;
+      font-size: 12px;
       color: #aaa;
       background: #252540;
       border-radius: 3px;
@@ -321,7 +340,7 @@ export function generateSetlistHTML(
       position: absolute;
       bottom: 8px;
       right: ${padX}px;
-      font-size: 10px;
+      font-size: 12px;
       color: #444;
       font-family: 'JetBrains Mono', monospace;
     }

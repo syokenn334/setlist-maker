@@ -1,13 +1,21 @@
 import { useCallback, useState } from 'react';
 import html2canvas from 'html2canvas';
 
+export interface CanvasSize {
+  width: number;
+  height: number;
+}
+
 export function useExport() {
   const [exporting, setExporting] = useState(false);
 
-  const captureElement = async (element: HTMLElement): Promise<string> => {
+  const captureElement = async (
+    element: HTMLElement,
+    size: CanvasSize = { width: 1600, height: 900 },
+  ): Promise<string> => {
     const canvas = await html2canvas(element, {
-      width: 1600,
-      height: 900,
+      width: size.width,
+      height: size.height,
       scale: 2,
       useCORS: true,
       backgroundColor: null,
@@ -30,13 +38,17 @@ export function useExport() {
     a.click();
   };
 
-  const exportPng = useCallback(async (element: HTMLElement | null, fileName: string) => {
+  const exportPng = useCallback(async (
+    element: HTMLElement | null,
+    fileName: string,
+    size?: CanvasSize,
+  ) => {
     if (!element) return;
     setExporting(true);
 
     try {
       await document.fonts.ready;
-      const url = await captureElement(element);
+      const url = await captureElement(element, size);
       download(url, fileName);
     } finally {
       setExporting(false);
@@ -48,6 +60,7 @@ export function useExport() {
     setPage: (page: number) => void,
     pageCount: number,
     baseName: string,
+    size?: CanvasSize,
   ) => {
     setExporting(true);
 
@@ -62,7 +75,7 @@ export function useExport() {
         const el = getElement();
         if (!el) continue;
 
-        const url = await captureElement(el);
+        const url = await captureElement(el, size);
         const suffix = pageCount > 1 ? `_${i + 1}` : '';
         download(url, `${baseName}${suffix}.png`);
       }
