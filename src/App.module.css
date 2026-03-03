@@ -118,3 +118,30 @@
   font-size: 12px;
   color: var(--accent);
 }
+
+/* ── SP responsive (≤768px) ── */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .header {
+    display: none;
+  }
+
+  .main {
+    flex: none;
+    height: 45vh;
+    padding: 12px;
+    order: 1;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    flex: 1;
+    order: 2;
+    padding: 16px !important;
+  }
+}

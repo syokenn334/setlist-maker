@@ -79,6 +79,17 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const [isMobile, setIsMobile] = useState(() =>
+    window.matchMedia('(max-width: 768px)').matches,
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   const previewRef = useRef<SetlistPreviewHandle>(null);
   const artworkFetcher = useArtworkFetcher();
   const { exporting, exportPng, exportAllPages } = useExport();
@@ -191,9 +202,10 @@ export default function App() {
     <div className={styles.app}>
       <motion.aside
         className={styles.sidebar}
-        variants={sidebarVariants}
-        animate={sidebarOpen ? 'open' : 'closed'}
+        variants={isMobile ? undefined : sidebarVariants}
+        animate={isMobile ? undefined : sidebarOpen ? 'open' : 'closed'}
         initial={false}
+        style={isMobile ? { width: '100%', padding: '16px' } : undefined}
       >
         <div className={styles.header}>
           <AnimatePresence>
@@ -220,12 +232,12 @@ export default function App() {
         </div>
 
         <AnimatePresence>
-          {sidebarOpen && (
+          {(isMobile || sidebarOpen) && (
             <motion.div
               className={styles.sidebarContent}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.2, delay: 0.1 } }}
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              initial={isMobile ? false : { opacity: 0 }}
+              animate={isMobile ? undefined : { opacity: 1, transition: { duration: 0.2, delay: 0.1 } }}
+              exit={isMobile ? undefined : { opacity: 0, transition: { duration: 0.1 } }}
             >
               <DropZone onFile={handleFile} currentFileName={fileName} />
 
