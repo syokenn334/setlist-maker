@@ -1,0 +1,38 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.options {
+  display: flex;
+  gap: 6px;
+}
+
+.option {
+  flex: 1;
+  padding: 8px 4px;
+  background: #222;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-align: center;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.option:hover {
+  border-color: var(--text-muted);
+}
+
+.active {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}

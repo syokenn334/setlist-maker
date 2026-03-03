@@ -1,0 +1,100 @@
+.row {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 4px;
+  gap: 6px;
+  flex-shrink: 0;
+  background: var(--sl-row-even);
+}
+
+.rowOdd {
+  background: var(--sl-row-odd);
+}
+
+.num {
+  width: 24px;
+  text-align: right;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sl-num);
+  flex-shrink: 0;
+}
+
+.art {
+  flex-shrink: 0;
+}
+
+.artImg {
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+}
+
+.noArt {
+  border-radius: 4px;
+  background: var(--sl-no-art);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sl-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-size: 10px;
+  color: var(--sl-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bpm {
+  width: 42px;
+  text-align: right;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sl-bpm);
+  flex-shrink: 0;
+}
+
+.time {
+  width: 36px;
+  text-align: right;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sl-time);
+  flex-shrink: 0;
+}
+
+.genre {
+  width: 72px;
+  font-size: 9px;
+  color: var(--sl-genre-text);
+  background: var(--sl-genre-bg);
+  border-radius: 3px;
+  padding: 2px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.genreEmpty {
+  width: 72px;
+  flex-shrink: 0;
+}

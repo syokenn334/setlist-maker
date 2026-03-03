@@ -1,0 +1,8 @@
+.brand {
+  margin-top: auto;
+  text-align: right;
+  font-size: 10px;
+  color: var(--sl-brand);
+  font-family: 'JetBrains Mono', monospace;
+  padding-top: 4px;
+}

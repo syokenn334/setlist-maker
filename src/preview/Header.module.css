@@ -1,0 +1,49 @@
+.header {
+  height: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--sl-header-border);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.event {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sl-event);
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.date {
+  font-size: 14px;
+  color: var(--sl-date);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.page {
+  font-size: 11px;
+  color: var(--sl-date);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dj {
+  font-size: 13px;
+  color: var(--sl-dj);
+  width: 50%;
+}
+
+.total {
+  font-size: 12px;
+  color: var(--sl-total);
+  text-align: right;
+  width: 50%;
+}
