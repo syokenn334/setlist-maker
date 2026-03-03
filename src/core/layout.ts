@@ -56,8 +56,9 @@ export function calculatePageLayout(
     (COLUMN_AREA_HEIGHT - (clamped - 1) * rowGap) / clamped,
   );
 
+  // 2カラム時は左を maxRows まで埋めてから右に折り返す
   const rowsPerColumn =
-    columnCount === 1 ? trackCount : Math.ceil(trackCount / 2);
+    columnCount === 1 ? trackCount : Math.min(trackCount, clamped);
 
   return { columnCount, rowsPerColumn, rowHeight, rowGap };
 }
