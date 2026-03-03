@@ -14,14 +14,12 @@ export function Header({ metadata, trackCount, pageIndex, pageCount }: HeaderPro
   return (
     <div className={styles.header}>
       <span className={styles.event}>{metadata.eventName}</span>
-      <div className={styles.right}>
-        <span className={styles.date}>{metadata.date}</span>
-        {showPage && (
-          <span className={styles.page}>{pageIndex! + 1}/{pageCount}</span>
-        )}
-      </div>
+      <span className={styles.date}>{metadata.date}</span>
       <span className={styles.dj}>{metadata.djName}</span>
       <span className={styles.total}>{trackCount}曲</span>
+      {showPage && (
+        <span className={styles.page}>{pageIndex! + 1}/{pageCount}</span>
+      )}
     </div>
   );
 }
