@@ -13,7 +13,7 @@ export function RowsPerPageSlider({ value, onChange }: RowsPerPageSliderProps) {
       </div>
       <input
         type="range"
-        min={10}
+        min={8}
         max={18}
         step={1}
         value={value}

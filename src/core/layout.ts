@@ -65,7 +65,7 @@ export function calculatePageLayout(
   columnCount: 1 | 2,
   canvasHeight: number = 900,
 ): LayoutInfo {
-  const clamped = Math.max(10, Math.min(18, maxRows));
+  const clamped = Math.max(8, Math.min(18, maxRows));
   const rowGap = 2;
 
   const areaHeight = canvasHeight - PADDING_AND_HEADER;

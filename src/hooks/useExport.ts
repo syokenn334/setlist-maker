@@ -13,8 +13,8 @@ export function useExport() {
   const captureElement = async (
     element: HTMLElement,
     size: CanvasSize = { width: 1600, height: 900 },
-  ): Promise<string> => {
-    const canvas = await html2canvas(element, {
+  ): Promise<Blob> => {
+    const hiRes = await html2canvas(element, {
       width: size.width,
       height: size.height,
       scale: 2,
@@ -55,14 +55,22 @@ export function useExport() {
         });
       },
     });
-    return canvas.toDataURL('image/png');
+
+    return new Promise<Blob>((resolve, reject) => {
+      hiRes.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to create blob'));
+      }, 'image/png');
+    });
   };
 
-  const download = (dataUrl: string, fileName: string) => {
+  const download = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = dataUrl;
+    a.href = url;
     a.download = fileName;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const exportPng = useCallback(async (
@@ -75,8 +83,8 @@ export function useExport() {
 
     try {
       await document.fonts.ready;
-      const url = await captureElement(element, size);
-      download(url, fileName);
+      const blob = await captureElement(element, size);
+      download(blob, fileName);
     } finally {
       setExporting(false);
     }
@@ -102,9 +110,9 @@ export function useExport() {
         const el = getElement();
         if (!el) continue;
 
-        const url = await captureElement(el, size);
+        const blob = await captureElement(el, size);
         const suffix = pageCount > 1 ? `_${i + 1}` : '';
-        download(url, `${baseName}${suffix}.png`);
+        download(blob, `${baseName}${suffix}.png`);
       }
     } finally {
       setExporting(false);
