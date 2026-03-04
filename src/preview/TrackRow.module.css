@@ -102,3 +102,11 @@
   text-align: center;
   flex-shrink: 0;
 }
+
+.bpmDash {
+  padding-right: 8px;
+}
+
+.timeDash {
+  padding-right: 5px;
+}
