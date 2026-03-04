@@ -53,7 +53,7 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
       </div>
       <div className={`${styles.bpm} ${!track.bpm ? styles.bpmDash : ''}`}>{bpm}</div>
       <div className={`${styles.time} ${!track.time ? styles.timeDash : ''}`}>{time}</div>
-      <div className={track.genre ? styles.genre : styles.genreEmpty}>{genre}</div>
+      <div className={styles.genre}>{genre}</div>
     </div>
   );
 }
