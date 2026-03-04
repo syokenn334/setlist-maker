@@ -52,7 +52,11 @@ export function useArtworkFetcher() {
           try {
             const result = await fetchArtwork(artist, title);
             if (controller.signal.aborted) return;
-            tracksWithArt[i] = { ...tracksWithArt[i], artworkUrl: result.url };
+            tracksWithArt[i] = {
+              ...tracksWithArt[i],
+              artworkUrl: result.url,
+              album: tracksWithArt[i].album || result.album || undefined,
+            };
           } catch {
             // Fetch failed, keep null
           }

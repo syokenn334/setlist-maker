@@ -18,6 +18,8 @@ export interface ArtworkResult {
   matchedTitle?: string;
   /** マッチしたアーティスト名 (API側) */
   matchedArtist?: string;
+  /** アルバム名 (API側) */
+  album?: string;
 }
 
 // --- 検索クエリ正規化 ---
@@ -74,6 +76,7 @@ interface ITunesResult {
   results: {
     trackName: string;
     artistName: string;
+    collectionName: string;
     artworkUrl100: string;
   }[];
 }
@@ -105,6 +108,7 @@ export async function searchItunes(query: string): Promise<ArtworkResult | null>
       query,
       matchedTitle: track.trackName,
       matchedArtist: track.artistName,
+      album: track.collectionName,
     };
   } catch {
     return null;
@@ -118,6 +122,7 @@ interface DeezerResult {
     title: string;
     artist: { name: string };
     album: {
+      title: string;
       cover_big: string;
       cover_xl: string;
     };
@@ -147,6 +152,7 @@ export async function searchDeezer(query: string): Promise<ArtworkResult | null>
       query,
       matchedTitle: track.title,
       matchedArtist: track.artist.name,
+      album: track.album.title,
     };
   } catch {
     return null;
