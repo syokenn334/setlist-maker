@@ -51,8 +51,8 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
         <div className={styles.title} style={{ fontSize: titleSize }}>{track.title ?? 'Unknown'}</div>
         <div className={styles.sub} style={{ fontSize: subSize }}>{sub}</div>
       </div>
-      <div className={styles.bpm} style={!track.bpm ? { textAlign: 'center' } : undefined}>{bpm}</div>
-      <div className={styles.time} style={!track.time ? { textAlign: 'center' } : undefined}>{time}</div>
+      <div className={styles.bpm} style={!track.bpm ? { paddingRight: 8 } : undefined}>{bpm}</div>
+      <div className={styles.time} style={!track.time ? { paddingRight: 6 } : undefined}>{time}</div>
       <div className={track.genre ? styles.genre : styles.genreEmpty}>{genre}</div>
     </div>
   );
