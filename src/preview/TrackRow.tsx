@@ -19,7 +19,9 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
   const artist = track.artist ?? 'Unknown';
   const album = track.album ?? '';
   const sub = album ? `${artist} \u00b7 ${album}` : artist;
-  const bpm = track.bpm ? String(Math.round(track.bpm)) : '';
+  const bpm = track.bpm ? String(Math.round(track.bpm)) : '\u2013';
+  const time = track.time ?? '\u2013';
+  const genre = track.genre ?? '\u2013';
 
   const rawScale = layout.rowHeight / BASE_ROW_HEIGHT;
   const scale = 1 + (rawScale - 1) * 0.35;
@@ -50,12 +52,8 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
         <div className={styles.sub} style={{ fontSize: subSize }}>{sub}</div>
       </div>
       <div className={styles.bpm}>{bpm}</div>
-      <div className={styles.time}>{track.time ?? ''}</div>
-      {track.genre ? (
-        <div className={styles.genre}>{track.genre}</div>
-      ) : (
-        <div className={styles.genreEmpty} />
-      )}
+      <div className={styles.time}>{time}</div>
+      <div className={track.genre ? styles.genre : styles.genreEmpty}>{genre}</div>
     </div>
   );
 }

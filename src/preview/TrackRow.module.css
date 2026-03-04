@@ -97,5 +97,8 @@
 
 .genreEmpty {
   width: 72px;
+  font-size: 14px;
+  color: var(--sl-genre-text);
+  text-align: center;
   flex-shrink: 0;
 }
