@@ -24,6 +24,7 @@
   width: 100%;
   accent-color: var(--accent);
   cursor: pointer;
+  touch-action: none;
 }
 
 .disabled {

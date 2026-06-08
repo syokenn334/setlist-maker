@@ -1,6 +1,6 @@
 .app {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -159,7 +159,7 @@
 
   .main {
     flex: none;
-    height: 45vh;
+    height: 45dvh;
     padding: 12px;
     order: 1;
   }
@@ -170,6 +170,6 @@
     border-top: 1px solid var(--border);
     flex: 1;
     order: 2;
-    padding: 16px !important;
+    padding: 16px 20px !important;
   }
 }
