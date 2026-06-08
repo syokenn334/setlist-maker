@@ -5,6 +5,9 @@
 }
 
 .label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
   font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;

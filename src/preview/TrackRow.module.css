@@ -6,6 +6,7 @@
   gap: 6px;
   flex-shrink: 0;
   background: var(--sl-row-even);
+  cursor: pointer;
 }
 
 .rowOdd {
@@ -35,6 +36,45 @@
 .noArt {
   border-radius: 4px;
   background: var(--sl-no-art);
+}
+
+.artSkeleton {
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artSkeletonLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.5px;
+}
+
+.infoHidden {
+  /* gap applied inline based on font sizes */
+}
+
+.titleRedacted {
+  width: 260px;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.subRedacted {
+  width: 200px;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.metaRedacted {
+  /* bpm 42 + time 36 + genre 72 + 2 inter-gaps of 6 = 162px */
+  width: 162px;
+  background: rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
 }
 
 .info {
@@ -83,11 +123,13 @@
 
 .genre {
   width: 72px;
+  height: 20px;
   font-size: 14px;
+  line-height: 20px;
   color: var(--sl-genre-text);
   background: var(--sl-genre-bg);
   border-radius: 3px;
-  padding: 2px 4px;
+  padding: 0 4px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;

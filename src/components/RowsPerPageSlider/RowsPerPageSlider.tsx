@@ -9,6 +9,7 @@ export function RowsPerPageSlider({ value, onChange }: RowsPerPageSliderProps) {
   return (
     <div className={styles.container}>
       <div className={styles.label}>
+        <span>1列の最大表示曲数</span>
         <span className={styles.value}>{value}</span>
       </div>
       <input

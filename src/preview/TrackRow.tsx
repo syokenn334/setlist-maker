@@ -1,10 +1,14 @@
+import type { MouseEvent } from 'react';
 import type { TrackWithArtwork, LayoutInfo } from '@core/layout.ts';
 import styles from './TrackRow.module.css';
 
 interface TrackRowProps {
   track: TrackWithArtwork;
   index: number;
+  globalIndex: number;
+  hidden: boolean;
   layout: LayoutInfo;
+  onClick: (globalIndex: number, event: MouseEvent<HTMLDivElement>) => void;
 }
 
 // Base row height at 18 rows (used as scale reference)
@@ -12,7 +16,7 @@ const BASE_ROW_HEIGHT = 42;
 const BASE_TITLE_SIZE = 14;
 const BASE_SUB_SIZE = 12;
 
-export function TrackRow({ track, index, layout }: TrackRowProps) {
+export function TrackRow({ track, index, globalIndex, hidden, layout, onClick }: TrackRowProps) {
   const isOdd = index % 2 === 0; // 0-indexed; first row = visual odd
   const artSize = layout.rowHeight - 6;
   const num = String(track.number ?? index + 1).padStart(2, '\u00a0');
@@ -28,14 +32,32 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
   const titleSize = Math.round(BASE_TITLE_SIZE * scale);
   const subSize = Math.round(BASE_SUB_SIZE * scale);
 
+  // Redacted gap = explicit info-gap (1px) + line-height-derived leading
+  // (top half of sub-line + bottom half of title-line)
+  // Assumes line-height ~1.2 → leading = 0.2 * fontSize total per line
+  const REDACTED_LINE_HEIGHT = 1.15;
+  const redactedGap = Math.round(
+    1 + (REDACTED_LINE_HEIGHT - 1) * (titleSize + subSize),
+  );
+
   return (
     <div
       className={`${styles.row} ${isOdd ? styles.rowOdd : ''}`}
       style={{ height: layout.rowHeight }}
+      onClick={(e) => onClick(globalIndex, e)}
     >
       <div className={styles.num}>{num}</div>
       <div className={styles.art} style={{ width: artSize, height: artSize }}>
-        {track.artworkUrl ? (
+        {hidden ? (
+          <div className={styles.artSkeleton} style={{ width: artSize, height: artSize }}>
+            <span
+              className={styles.artSkeletonLabel}
+              style={{ fontSize: Math.max(10, Math.round(artSize * 0.35)) }}
+            >
+              ID
+            </span>
+          </div>
+        ) : track.artworkUrl ? (
           <img
             className={styles.artImg}
             src={track.artworkUrl}
@@ -47,13 +69,31 @@ export function TrackRow({ track, index, layout }: TrackRowProps) {
           <div className={styles.noArt} style={{ width: artSize, height: artSize }} />
         )}
       </div>
-      <div className={styles.info}>
-        <div className={styles.title} style={{ fontSize: titleSize }}>{track.title ?? 'Unknown'}</div>
-        <div className={styles.sub} style={{ fontSize: subSize }}>{sub}</div>
+      <div
+        className={`${styles.info} ${hidden ? styles.infoHidden : ''}`}
+        style={hidden ? { gap: redactedGap } : undefined}
+      >
+        {hidden ? (
+          <>
+            <div className={styles.titleRedacted} style={{ height: titleSize }} />
+            <div className={styles.subRedacted} style={{ height: subSize }} />
+          </>
+        ) : (
+          <>
+            <div className={styles.title} style={{ fontSize: titleSize }}>{track.title ?? 'Unknown'}</div>
+            <div className={styles.sub} style={{ fontSize: subSize }}>{sub}</div>
+          </>
+        )}
       </div>
-      <div className={`${styles.bpm} ${!track.bpm ? styles.bpmDash : ''}`}>{bpm}</div>
-      <div className={`${styles.time} ${!track.time ? styles.timeDash : ''}`}>{time}</div>
-      <div className={styles.genre}>{genre}</div>
+      {hidden ? (
+        <div className={styles.metaRedacted} style={{ height: titleSize }} />
+      ) : (
+        <>
+          <div className={`${styles.bpm} ${!track.bpm ? styles.bpmDash : ''}`}>{bpm}</div>
+          <div className={`${styles.time} ${!track.time ? styles.timeDash : ''}`}>{time}</div>
+          <div className={styles.genre}>{genre}</div>
+        </>
+      )}
     </div>
   );
 }

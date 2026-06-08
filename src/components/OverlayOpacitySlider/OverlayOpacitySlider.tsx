@@ -10,6 +10,7 @@ export function OverlayOpacitySlider({ value, onChange, disabled }: OverlayOpaci
   return (
     <div className={`${styles.container} ${disabled ? styles.disabled : ''}`}>
       <div className={styles.label}>
+        <span>透過率</span>
         <span className={styles.value}>{Math.round(value * 100)}%</span>
       </div>
       <input

@@ -119,6 +119,34 @@
   color: var(--accent);
 }
 
+.trackMenu {
+  position: fixed;
+  z-index: 1000;
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  min-width: 120px;
+}
+
+.trackMenuItem {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trackMenuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* ── SP responsive (≤768px) ── */
 @media (max-width: 768px) {
   .app {

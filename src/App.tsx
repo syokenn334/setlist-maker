@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseFile } from '@core/parser.ts';
 import type { Track } from '@core/parser.ts';
@@ -78,6 +79,8 @@ export default function App() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [currentPage, setCurrentPage] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [hiddenTracks, setHiddenTracks] = useState<Set<number>>(new Set());
+  const [trackMenu, setTrackMenu] = useState<{ globalIndex: number; x: number; y: number } | null>(null);
 
   const [isMobile, setIsMobile] = useState(() =>
     window.matchMedia('(max-width: 768px)').matches,
@@ -140,6 +143,8 @@ export default function App() {
     setError(null);
     artworkFetcher.abort();
     setCurrentPage(0);
+    setHiddenTracks(new Set());
+    setTrackMenu(null);
 
     try {
       const result = await parseFile(file);
@@ -179,6 +184,37 @@ export default function App() {
   }, [metadata.eventName, metadata.date]);
 
   const canvasSize = CANVAS_SIZES[aspectRatio];
+
+  const handleTrackClick = useCallback((globalIndex: number, e: ReactMouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setTrackMenu({ globalIndex, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleToggleHidden = useCallback(() => {
+    if (!trackMenu) return;
+    setHiddenTracks((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackMenu.globalIndex)) next.delete(trackMenu.globalIndex);
+      else next.add(trackMenu.globalIndex);
+      return next;
+    });
+    setTrackMenu(null);
+  }, [trackMenu]);
+
+  useEffect(() => {
+    if (!trackMenu) return;
+    const close = () => setTrackMenu(null);
+    window.addEventListener('mousedown', close);
+    window.addEventListener('touchstart', close);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('touchstart', close);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [trackMenu]);
 
   const handleExport = useCallback(() => {
     const baseName = buildExportName();
@@ -291,9 +327,15 @@ export default function App() {
                     </motion.div>
 
                     <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>背景</div>
+                      <div className={styles.sectionTitle}>テーマ</div>
                       <div className={styles.sectionBody}>
                         <TemplatePicker current={template} onChange={setTemplate} />
+                      </div>
+                    </motion.div>
+
+                    <motion.div className={styles.section} variants={sectionItem}>
+                      <div className={styles.sectionTitle}>背景</div>
+                      <div className={styles.sectionBody}>
                         <BackgroundUploader
                           hasBackground={backgroundImage !== null}
                           onUpload={setBackgroundImage}
@@ -344,6 +386,9 @@ export default function App() {
               pageIndex={currentPage}
               pageCount={pageCount}
               totalTrackCount={displayTracks.length}
+              globalIndexStart={currentPage * tracksPerPage}
+              hiddenTracks={hiddenTracks}
+              onTrackClick={handleTrackClick}
             />
           </>
         ) : (
@@ -355,6 +400,19 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {trackMenu && (
+        <div
+          className={styles.trackMenu}
+          style={{ left: trackMenu.x, top: trackMenu.y }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <button className={styles.trackMenuItem} onClick={handleToggleHidden}>
+            {hiddenTracks.has(trackMenu.globalIndex) ? '再表示' : '非表示'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import type { TrackWithArtwork, LayoutInfo, SetlistMetadata, AspectRatio } from '@core/layout.ts';
 import { calculateLayout, calculatePageLayout, splitTracks, CANVAS_SIZES } from '@core/layout.ts';
@@ -22,6 +23,9 @@ interface SetlistPreviewProps {
   pageIndex?: number;
   pageCount?: number;
   totalTrackCount?: number;
+  globalIndexStart?: number;
+  hiddenTracks?: Set<number>;
+  onTrackClick?: (globalIndex: number, event: MouseEvent<HTMLDivElement>) => void;
 }
 
 export interface SetlistPreviewHandle {
@@ -31,7 +35,7 @@ export interface SetlistPreviewHandle {
 const scalerTransition = { type: 'spring' as const, stiffness: 200, damping: 25 };
 
 export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewProps>(
-  function SetlistPreview({ tracks, metadata, template, backgroundImage, overlayOpacity, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount }, ref) {
+  function SetlistPreview({ tracks, metadata, template, backgroundImage, overlayOpacity, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount, globalIndexStart = 0, hiddenTracks, onTrackClick }, ref) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -87,14 +91,21 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
                   const offset = ci === 0 ? 0 : columns[0].length;
                   return (
                     <Column key={ci} layout={layout} canvasWidth={canvasSize.width}>
-                      {col.map((track, i) => (
-                        <TrackRow
-                          key={offset + i}
-                          track={track}
-                          index={offset + i}
-                          layout={layout}
-                        />
-                      ))}
+                      {col.map((track, i) => {
+                        const inPageIndex = offset + i;
+                        const globalIdx = globalIndexStart + inPageIndex;
+                        return (
+                          <TrackRow
+                            key={inPageIndex}
+                            track={track}
+                            index={inPageIndex}
+                            globalIndex={globalIdx}
+                            hidden={hiddenTracks?.has(globalIdx) ?? false}
+                            layout={layout}
+                            onClick={(gi, e) => onTrackClick?.(gi, e)}
+                          />
+                        );
+                      })}
                     </Column>
                   );
                 })}
