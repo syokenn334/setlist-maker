@@ -3,8 +3,8 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseFile } from '@core/parser.ts';
 import type { Track } from '@core/parser.ts';
-import type { SetlistMetadata, TrackWithArtwork, AspectRatio } from '@core/layout.ts';
-import { CANVAS_SIZES } from '@core/layout.ts';
+import type { SetlistMetadata, TrackWithArtwork, AspectRatio, LogoBox } from '@core/layout.ts';
+import { CANVAS_SIZES, calculateRowHeight, computeLogoBox, computeLogoRowsOccupied, getLogoTopMargin } from '@core/layout.ts';
 import type { AppPhase } from './types/index.ts';
 import type { SetlistTemplate } from './templates/index.ts';
 import { defaultTemplate } from './templates/index.ts';
@@ -21,6 +21,8 @@ import { OverlayOpacitySlider } from './components/OverlayOpacitySlider/OverlayO
 import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
 import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
 import { PageNav } from './components/PageNav/PageNav.tsx';
+import { LogoUploader } from './components/LogoUploader/LogoUploader.tsx';
+import { LogoHeightSlider } from './components/LogoHeightSlider/LogoHeightSlider.tsx';
 import { ArtworkSearchModal } from './components/ArtworkSearchModal/ArtworkSearchModal.tsx';
 import type { ArtworkCandidate } from '@core/artwork.ts';
 import { SetlistPreview } from './preview/SetlistPreview.tsx';
@@ -85,6 +87,9 @@ export default function App() {
   const [artworkOverrides, setArtworkOverrides] = useState<Map<number, string>>(new Map());
   const [trackMenu, setTrackMenu] = useState<{ globalIndex: number; x: number; y: number } | null>(null);
   const [searchModal, setSearchModal] = useState<{ globalIndex: number } | null>(null);
+  const [logoImage, setLogoImage] = useState<string | null>(null);
+  const [logoNatural, setLogoNatural] = useState<{ width: number; height: number } | null>(null);
+  const [logoHeightScale, setLogoHeightScale] = useState(1.0);
 
   const [isMobile, setIsMobile] = useState(() =>
     window.matchMedia('(max-width: 768px)').matches,
@@ -117,9 +122,37 @@ export default function App() {
     });
   }, [phase, artworkFetcher.tracks, bareTracks, artworkOverrides]);
 
+  const canvasSize = CANVAS_SIZES[aspectRatio];
+
+  // Logo box (aspect-fit within max constraints)
+  const logoBox: LogoBox | null = useMemo(() => {
+    if (!logoImage || !logoNatural) return null;
+    return computeLogoBox(logoNatural, canvasSize.width, canvasSize.height, columnCount, aspectRatio, logoHeightScale);
+  }, [logoImage, logoNatural, canvasSize, columnCount, aspectRatio, logoHeightScale]);
+
+  // Rows the logo covers (logo height + 1/3-row top margin)
+  const logoRowsOccupied = useMemo(() => {
+    if (!logoBox) return 0;
+    const { rowHeight, rowGap } = calculateRowHeight(rowsPerPage, canvasSize.height);
+    const topMargin = getLogoTopMargin(canvasSize.height);
+    return computeLogoRowsOccupied(logoBox.height, rowHeight, rowGap, topMargin);
+  }, [logoBox, rowsPerPage, canvasSize.height]);
+
   // Page division logic
+  // - 2-col + logo: right column capacity reduced
+  // - 1-col + 16:9 + logo: full capacity (overlap handled via row shrink)
+  // - 1-col + 7:8 or 9:16 + logo: capacity reduced (displaced rows go to next page)
   const maxRows = rowsPerPage;
-  const tracksPerPage = maxRows * columnCount;
+  const tracksPerPage = (() => {
+    if (columnCount === 2) {
+      return maxRows + Math.max(0, maxRows - logoRowsOccupied);
+    }
+    // 1-col
+    if (aspectRatio !== '16:9') {
+      return Math.max(0, maxRows - logoRowsOccupied);
+    }
+    return maxRows;
+  })();
   const pageCount = displayTracks.length <= tracksPerPage
     ? 1
     : Math.ceil(displayTracks.length / tracksPerPage);
@@ -200,7 +233,15 @@ export default function App() {
     return `${title}_${dateStr}`;
   }, [metadata.eventName, metadata.date]);
 
-  const canvasSize = CANVAS_SIZES[aspectRatio];
+  const handleLogoUpload = useCallback((dataUrl: string, w: number, h: number) => {
+    setLogoImage(dataUrl);
+    setLogoNatural({ width: w, height: h });
+  }, []);
+
+  const handleLogoClear = useCallback(() => {
+    setLogoImage(null);
+    setLogoNatural(null);
+  }, []);
 
   const handleTrackClick = useCallback((globalIndex: number, e: ReactMouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -380,6 +421,22 @@ export default function App() {
                     </motion.div>
 
                     <motion.div className={styles.section} variants={sectionItem}>
+                      <div className={styles.sectionTitle}>ロゴ</div>
+                      <div className={styles.sectionBody}>
+                        <LogoUploader
+                          hasLogo={logoImage !== null}
+                          onUpload={handleLogoUpload}
+                          onClear={handleLogoClear}
+                        />
+                        <LogoHeightSlider
+                          value={logoHeightScale}
+                          onChange={setLogoHeightScale}
+                          disabled={logoImage === null}
+                        />
+                      </div>
+                    </motion.div>
+
+                    <motion.div className={styles.section} variants={sectionItem}>
                       <div className={styles.sectionTitle}>レイアウト</div>
                       <div className={styles.sectionBody}>
                         <RowsPerPageSlider value={rowsPerPage} onChange={handleRowsPerPageChange} />
@@ -423,6 +480,9 @@ export default function App() {
               globalIndexStart={currentPage * tracksPerPage}
               hiddenTracks={hiddenTracks}
               onTrackClick={handleTrackClick}
+              logoImage={logoImage}
+              logoBox={logoBox}
+              logoRowsOccupied={logoRowsOccupied}
             />
           </>
         ) : (

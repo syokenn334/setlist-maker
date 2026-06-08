@@ -25,6 +25,8 @@ export interface SetlistMetadata {
 export interface LayoutInfo {
   columnCount: 1 | 2;
   rowsPerColumn: number;
+  /** 右カラムの行数 (ロゴ干渉で左より少ない時に設定) */
+  rightColumnRows?: number;
   /** 1カラム20行以上の場合は行高を縮小 */
   rowHeight: number;
   rowGap: number;
@@ -40,17 +42,38 @@ export const CANVAS_SIZES: Record<AspectRatio, { width: number; height: number }
   '7:8': { width: 1050, height: 1200 },
 };
 
-/** padding: top 16 + bottom 28 = 44, header 56 + mb 12 = 68 */
-const PADDING_AND_HEADER = 44 + 68;
+// --- レイアウト定数 (single source of truth) ---
+// Canvas の padding と Header の寸法は CSS と同期させる必要あり
+// (Canvas.module.css : padding 16px 24px 28px / Header の height + margin-bottom)
+
+/** Canvas 左右パディング (Canvas.module.css padding-x と一致) */
+export const CANVAS_PAD_X = 24;
+/** Canvas 上パディング */
+export const CANVAS_PAD_TOP = 16;
+/** Canvas 下パディング */
+export const CANVAS_PAD_BOTTOM = 28;
+/** ヘッダー高さ + margin-bottom (Header.module.css と一致) */
+export const HEADER_HEIGHT_WITH_MARGIN = 56 + 12;
+/** Canvas 縦パディング合計 (上 + 下) */
+export const CANVAS_PAD_Y = CANVAS_PAD_TOP + CANVAS_PAD_BOTTOM;
+/** カラムエリア上部の合計予約高 (縦パディング + ヘッダー) */
+export const PADDING_AND_HEADER = CANVAS_PAD_Y + HEADER_HEIGHT_WITH_MARGIN;
+/** 2カラム時のカラム間ギャップ */
+export const COL_GAP = 16;
+
+/** 任意のキャンバス高さから列エリアの利用可能高を計算 */
+export function getColumnHeight(canvasHeight: number): number {
+  return canvasHeight - PADDING_AND_HEADER;
+}
 
 export function getColumnAreaHeight(aspect: AspectRatio): number {
-  return CANVAS_SIZES[aspect].height - PADDING_AND_HEADER;
+  return getColumnHeight(CANVAS_SIZES[aspect].height);
 }
 
 // --- レイアウト計算 ---
 
 /** カラムエリアの利用可能高さ (canvas 900 - padding 44 - header 68) */
-const COLUMN_AREA_HEIGHT = 788;
+const COLUMN_AREA_HEIGHT = getColumnHeight(900);
 
 /**
  * ページ単位のレイアウト計算 (行数・カラム数指定)
@@ -65,22 +88,40 @@ export function calculatePageLayout(
   maxRows: number,
   columnCount: 1 | 2,
   canvasHeight: number = 900,
+  logoRowsOccupied: number = 0,
 ): LayoutInfo {
   const clamped = Math.max(8, Math.min(18, maxRows));
   const rowGap = 2;
 
-  const areaHeight = canvasHeight - PADDING_AND_HEADER;
+  const areaHeight = getColumnHeight(canvasHeight);
 
-  // 行高は常に maxRows 基準 (エリアいっぱいに広げる)
-  const rowHeight = Math.floor(
-    (areaHeight - (clamped - 1) * rowGap) / clamped,
-  );
+  // 行高は常に maxRows 基準でカラムエリアをぴったり埋める (非整数で OK)
+  // → リスト総高 = areaHeight になり、rowsPerPage を変えても列底位置が動かない
+  const rowHeight = (areaHeight - (clamped - 1) * rowGap) / clamped;
 
   // 2カラム時は左を maxRows まで埋めてから右に折り返す
   const rowsPerColumn =
     columnCount === 1 ? trackCount : Math.min(trackCount, clamped);
 
-  return { columnCount, rowsPerColumn, rowHeight, rowGap };
+  // 2カラム + ロゴ干渉時は右カラムの行数を減らす
+  let rightColumnRows: number | undefined;
+  if (columnCount === 2 && logoRowsOccupied > 0) {
+    rightColumnRows = Math.max(0, clamped - logoRowsOccupied);
+  }
+
+  return { columnCount, rowsPerColumn, rightColumnRows, rowHeight, rowGap };
+}
+
+/** rowHeight だけを計算したい場合のヘルパー (ロゴ計算等) */
+export function calculateRowHeight(
+  maxRows: number,
+  canvasHeight: number,
+): { rowHeight: number; rowGap: number } {
+  const clamped = Math.max(8, Math.min(18, maxRows));
+  const rowGap = 2;
+  const areaHeight = getColumnHeight(canvasHeight);
+  const rowHeight = (areaHeight - (clamped - 1) * rowGap) / clamped;
+  return { rowHeight, rowGap };
 }
 
 /**
@@ -106,9 +147,94 @@ export function calculateLayout(trackCount: number): LayoutInfo {
 export function splitTracks<T>(tracks: T[], layout: LayoutInfo): T[][] {
   if (layout.columnCount === 1) return [tracks];
 
-  const left = tracks.slice(0, layout.rowsPerColumn);
-  const right = tracks.slice(layout.rowsPerColumn);
+  const leftCount = layout.rowsPerColumn;
+  const rightCount = layout.rightColumnRows ?? layout.rowsPerColumn;
+  const left = tracks.slice(0, leftCount);
+  const right = tracks.slice(leftCount, leftCount + rightCount);
   return [left, right];
+}
+
+// --- ロゴレイアウト ---
+
+export interface LogoBox {
+  width: number;
+  height: number;
+}
+
+/** ロゴ上部の余白 = maxRows=8 時の 1 行高の 1/3 */
+export function getLogoTopMargin(canvasHeight: number): number {
+  const { rowHeight } = calculateRowHeight(8, canvasHeight);
+  return Math.floor(rowHeight / 3);
+}
+
+/** 最大ロゴ高さ
+ * ロゴ下端を「最終行ボトム」に合わせるアンカーで、
+ * maxRows=8 + 最大スライダー時に上余白が 1/3 行になる値:
+ *   maxLogoH = 3 * pitch - margin
+ * (K=3 のとき K*pitch - margin が上余白計算式となる)
+ */
+export function getMaxLogoHeight(canvasHeight: number): number {
+  const { rowHeight, rowGap } = calculateRowHeight(8, canvasHeight);
+  const pitch = rowHeight + rowGap;
+  const margin = getLogoTopMargin(canvasHeight);
+  return 3 * pitch - margin;
+}
+
+/** 最大ロゴ横幅
+ * - 2列: 1カラム幅 (右カラム内に中央配置)
+ * - 1列 + 16:9 (右寄せ・縮小行): 列幅の半分
+ * - 1列 + 7:8 / 9:16 (中央配置): 列幅ぶん (行と競合しない)
+ */
+export function getMaxLogoWidth(
+  canvasWidth: number,
+  columnCount: 1 | 2,
+  aspectRatio: AspectRatio,
+): number {
+  const contentW = canvasWidth - CANVAS_PAD_X * 2;
+  if (columnCount === 2) {
+    return Math.floor((contentW - COL_GAP) / 2);
+  }
+  if (aspectRatio === '16:9') {
+    return Math.floor(contentW / 2);
+  }
+  return contentW;
+}
+
+/** アスペクト比を保ちつつ max box に収めるロゴサイズを返す
+ * heightScale = 0..1 で max 高さに対する比率を指定 */
+export function computeLogoBox(
+  natural: { width: number; height: number },
+  canvasWidth: number,
+  canvasHeight: number,
+  columnCount: 1 | 2,
+  aspectRatio: AspectRatio,
+  heightScale: number,
+): LogoBox {
+  const maxW = getMaxLogoWidth(canvasWidth, columnCount, aspectRatio);
+  const maxH = getMaxLogoHeight(canvasHeight) * heightScale;
+  const aspect = natural.width / natural.height || 1;
+  let h = maxH;
+  let w = h * aspect;
+  if (w > maxW) {
+    w = maxW;
+    h = w / aspect;
+  }
+  return { width: Math.max(0, Math.floor(w)), height: Math.max(0, Math.floor(h)) };
+}
+
+/** ロゴが何行分を覆うかを計算
+ * ロゴ下端が最終行ボトムにアンカーされる前提:
+ *   K = ceil((logoHeight + topMargin) / pitch)
+ */
+export function computeLogoRowsOccupied(
+  logoHeight: number,
+  rowHeight: number,
+  rowGap: number,
+  topMargin: number,
+): number {
+  const pitch = rowHeight + rowGap;
+  if (pitch <= 0 || logoHeight <= 0) return 0;
+  return Math.ceil((logoHeight + topMargin) / pitch);
 }
 
 // --- HTML エスケープ ---

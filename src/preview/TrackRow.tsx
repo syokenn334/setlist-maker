@@ -8,6 +8,7 @@ interface TrackRowProps {
   globalIndex: number;
   hidden: boolean;
   layout: LayoutInfo;
+  shrinkWidth?: number;
   onClick: (globalIndex: number, event: MouseEvent<HTMLDivElement>) => void;
 }
 
@@ -16,7 +17,7 @@ const BASE_ROW_HEIGHT = 42;
 const BASE_TITLE_SIZE = 14;
 const BASE_SUB_SIZE = 12;
 
-export function TrackRow({ track, index, globalIndex, hidden, layout, onClick }: TrackRowProps) {
+export function TrackRow({ track, index, globalIndex, hidden, layout, shrinkWidth, onClick }: TrackRowProps) {
   const isOdd = index % 2 === 0; // 0-indexed; first row = visual odd
   const artSize = layout.rowHeight - 6;
   const num = String(track.number ?? index + 1).padStart(2, '\u00a0');
@@ -43,7 +44,10 @@ export function TrackRow({ track, index, globalIndex, hidden, layout, onClick }:
   return (
     <div
       className={`${styles.row} ${isOdd ? styles.rowOdd : ''}`}
-      style={{ height: layout.rowHeight }}
+      style={{
+        height: layout.rowHeight,
+        ...(shrinkWidth !== undefined ? { width: shrinkWidth, alignSelf: 'flex-start' } : null),
+      }}
       onClick={(e) => onClick(globalIndex, e)}
     >
       <div className={styles.num}>{num}</div>

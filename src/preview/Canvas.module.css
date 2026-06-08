@@ -1,6 +1,7 @@
 .canvas {
   background: var(--sl-canvas-bg);
   font-family: 'Inter', 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  /* NOTE: padding must stay in sync with CANVAS_PAD_TOP/X/BOTTOM in core/layout.ts */
   padding: 16px 24px 28px;
   overflow: hidden;
   position: relative;

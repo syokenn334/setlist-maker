@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
-import type { TrackWithArtwork, LayoutInfo, SetlistMetadata, AspectRatio } from '@core/layout.ts';
-import { calculateLayout, calculatePageLayout, splitTracks, CANVAS_SIZES } from '@core/layout.ts';
+import type { TrackWithArtwork, LayoutInfo, SetlistMetadata, AspectRatio, LogoBox } from '@core/layout.ts';
+import { calculateLayout, calculatePageLayout, splitTracks, CANVAS_SIZES, CANVAS_PAD_X, COL_GAP } from '@core/layout.ts';
 import type { SetlistTemplate } from '../templates/index.ts';
 import { Canvas } from './Canvas.tsx';
 import { Header } from './Header.tsx';
@@ -26,6 +26,9 @@ interface SetlistPreviewProps {
   globalIndexStart?: number;
   hiddenTracks?: Set<number>;
   onTrackClick?: (globalIndex: number, event: MouseEvent<HTMLDivElement>) => void;
+  logoImage?: string | null;
+  logoBox?: LogoBox | null;
+  logoRowsOccupied?: number;
 }
 
 export interface SetlistPreviewHandle {
@@ -35,7 +38,7 @@ export interface SetlistPreviewHandle {
 const scalerTransition = { type: 'spring' as const, stiffness: 200, damping: 25 };
 
 export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewProps>(
-  function SetlistPreview({ tracks, metadata, template, backgroundImage, overlayOpacity, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount, globalIndexStart = 0, hiddenTracks, onTrackClick }, ref) {
+  function SetlistPreview({ tracks, metadata, template, backgroundImage, overlayOpacity, rowsPerPage, columnCount, aspectRatio = '16:9', pageIndex, pageCount, totalTrackCount, globalIndexStart = 0, hiddenTracks, onTrackClick, logoImage, logoBox, logoRowsOccupied = 0 }, ref) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -63,9 +66,24 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
     }, [updateScale]);
 
     const layout: LayoutInfo = rowsPerPage !== undefined
-      ? calculatePageLayout(tracks.length, rowsPerPage, columnCount ?? 2, canvasSize.height)
+      ? calculatePageLayout(tracks.length, rowsPerPage, columnCount ?? 2, canvasSize.height, logoRowsOccupied)
       : calculateLayout(tracks.length);
     const columns = splitTracks(tracks, layout);
+
+    // 1-column row shrink: only for landscape (16:9). For tall aspects (7:8 / 9:16)
+    // overlapping rows are moved to the next page instead (handled in App via tracksPerPage).
+    const contentW = canvasSize.width - CANVAS_PAD_X * 2;
+    const rightColW = Math.floor((contentW - COL_GAP) / 2);
+    const useRowShrink = columnCount === 1 && aspectRatio === '16:9';
+    const shrinkColumnRows = useRowShrink && logoBox && logoRowsOccupied > 0 ? logoRowsOccupied : 0;
+    const shrunkRowWidth = shrinkColumnRows > 0
+      ? Math.floor(contentW / 2)
+      : undefined;
+    // Logo positioning:
+    // - 16:9 (1-col or 2-col): center within the (would-be) right column
+    // - 7:8 / 9:16 (1-col): center within the canvas
+    const centerInRightCol = aspectRatio === '16:9';
+    const centerInCanvas = aspectRatio !== '16:9';
 
     return (
       <div className={styles.wrapper} ref={wrapperRef}>
@@ -94,6 +112,9 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
                       {col.map((track, i) => {
                         const inPageIndex = offset + i;
                         const globalIdx = globalIndexStart + inPageIndex;
+                        // 1-col: last `shrinkColumnRows` rows are shrunk to make room for the logo
+                        const shouldShrink =
+                          shrinkColumnRows > 0 && i >= col.length - shrinkColumnRows;
                         return (
                           <TrackRow
                             key={inPageIndex}
@@ -102,6 +123,7 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
                             globalIndex={globalIdx}
                             hidden={hiddenTracks?.has(globalIdx) ?? false}
                             layout={layout}
+                            shrinkWidth={shouldShrink ? shrunkRowWidth : undefined}
                             onClick={(gi, e) => onTrackClick?.(gi, e)}
                           />
                         );
@@ -110,6 +132,28 @@ export const SetlistPreview = forwardRef<SetlistPreviewHandle, SetlistPreviewPro
                   );
                 })}
               </Columns>
+              {logoImage && logoBox && (
+                <div
+                  className={styles.logo}
+                  style={{
+                    bottom: 0,
+                    width: logoBox.width,
+                    height: logoBox.height,
+                    ...(centerInCanvas
+                      ? { left: '50%', transform: 'translateX(-50%)' }
+                      : centerInRightCol
+                      ? { right: Math.max(0, Math.floor((rightColW - logoBox.width) / 2)) }
+                      : { right: 0 }),
+                  }}
+                >
+                  <img
+                    src={logoImage}
+                    alt=""
+                    crossOrigin="anonymous"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                </div>
+              )}
               <Brand />
             </Canvas>
           </div>
