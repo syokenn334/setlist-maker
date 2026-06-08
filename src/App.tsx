@@ -21,6 +21,8 @@ import { OverlayOpacitySlider } from './components/OverlayOpacitySlider/OverlayO
 import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
 import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
 import { PageNav } from './components/PageNav/PageNav.tsx';
+import { ArtworkSearchModal } from './components/ArtworkSearchModal/ArtworkSearchModal.tsx';
+import type { ArtworkCandidate } from '@core/artwork.ts';
 import { SetlistPreview } from './preview/SetlistPreview.tsx';
 import type { SetlistPreviewHandle } from './preview/SetlistPreview.tsx';
 import styles from './App.module.css';
@@ -80,7 +82,9 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hiddenTracks, setHiddenTracks] = useState<Set<number>>(new Set());
+  const [artworkOverrides, setArtworkOverrides] = useState<Map<number, string>>(new Map());
   const [trackMenu, setTrackMenu] = useState<{ globalIndex: number; x: number; y: number } | null>(null);
+  const [searchModal, setSearchModal] = useState<{ globalIndex: number } | null>(null);
 
   const [isMobile, setIsMobile] = useState(() =>
     window.matchMedia('(max-width: 768px)').matches,
@@ -98,9 +102,20 @@ export default function App() {
   const { exporting, exportPng, exportAllPages } = useExport();
 
   // Derive display tracks: during/after fetching use artwork data, else bare tracks
+  // Apply per-track artwork overrides (manual jacket selection)
   const [bareTracks, setBareTracks] = useState<TrackWithArtwork[]>([]);
-  const displayTracks: TrackWithArtwork[] =
-    phase === 'idle' ? [] : artworkFetcher.tracks.length > 0 ? artworkFetcher.tracks : bareTracks;
+  const displayTracks: TrackWithArtwork[] = useMemo(() => {
+    const base = phase === 'idle'
+      ? []
+      : artworkFetcher.tracks.length > 0
+        ? artworkFetcher.tracks
+        : bareTracks;
+    if (artworkOverrides.size === 0) return base;
+    return base.map((t, i) => {
+      const url = artworkOverrides.get(i);
+      return url ? { ...t, artworkUrl: url } : t;
+    });
+  }, [phase, artworkFetcher.tracks, bareTracks, artworkOverrides]);
 
   // Page division logic
   const maxRows = rowsPerPage;
@@ -144,7 +159,9 @@ export default function App() {
     artworkFetcher.abort();
     setCurrentPage(0);
     setHiddenTracks(new Set());
+    setArtworkOverrides(new Map());
     setTrackMenu(null);
+    setSearchModal(null);
 
     try {
       const result = await parseFile(file);
@@ -200,6 +217,23 @@ export default function App() {
     });
     setTrackMenu(null);
   }, [trackMenu]);
+
+  const handleOpenSearch = useCallback(() => {
+    if (!trackMenu) return;
+    setSearchModal({ globalIndex: trackMenu.globalIndex });
+    setTrackMenu(null);
+  }, [trackMenu]);
+
+  const handleSelectArtwork = useCallback((candidate: ArtworkCandidate) => {
+    if (!searchModal) return;
+    const target = searchModal.globalIndex;
+    setArtworkOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(target, candidate.url);
+      return next;
+    });
+    setSearchModal(null);
+  }, [searchModal]);
 
   useEffect(() => {
     if (!trackMenu) return;
@@ -411,8 +445,23 @@ export default function App() {
           <button className={styles.trackMenuItem} onClick={handleToggleHidden}>
             {hiddenTracks.has(trackMenu.globalIndex) ? '再表示' : '非表示'}
           </button>
+          <button className={styles.trackMenuItem} onClick={handleOpenSearch}>
+            ジャケット検索
+          </button>
         </div>
       )}
+
+      {searchModal && (() => {
+        const t = displayTracks[searchModal.globalIndex];
+        const q = t ? `${t.artist ?? ''} ${t.title ?? ''}`.trim() : '';
+        return (
+          <ArtworkSearchModal
+            initialQuery={q}
+            onSelect={handleSelectArtwork}
+            onClose={() => setSearchModal(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

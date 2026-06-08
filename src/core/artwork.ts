@@ -81,6 +81,47 @@ interface ITunesResult {
   }[];
 }
 
+export interface ArtworkCandidate {
+  /** 600x600 アップスケール URL */
+  url: string;
+  title: string;
+  artist: string;
+  album: string;
+}
+
+/**
+ * iTunes Search API で複数候補を取得 (ジャケット手動差替用)
+ */
+export async function searchItunesMulti(
+  query: string,
+  limit = 5,
+): Promise<ArtworkCandidate[]> {
+  const url = `https://itunes.apple.com/search?${new URLSearchParams({
+    term: query,
+    entity: "musicTrack",
+    limit: String(limit),
+    country: "jp",
+    lang: "ja_jp",
+  })}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+
+    const data = (await res.json()) as ITunesResult;
+    return data.results
+      .filter((t) => t.artworkUrl100)
+      .map((t) => ({
+        url: t.artworkUrl100.replace("100x100bb", "600x600bb"),
+        title: t.trackName,
+        artist: t.artistName,
+        album: t.collectionName,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * iTunes Search API でアートワークを検索
  */
