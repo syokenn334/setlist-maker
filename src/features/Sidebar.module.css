@@ -3,11 +3,23 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--ui-space-3);
-  padding: var(--ui-space-5);
   border-right: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-panel);
-  overflow-y: auto;
+  /* keep the panel within the app height; ScrollArea scrolls the content */
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scroll {
+  flex: 1;
+}
+
+.inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-5);
 }
 
 .closed {
@@ -90,6 +102,12 @@
 .progress {
   display: flex;
   flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.progressLabel {
+  display: inline-flex;
+  align-items: center;
   gap: var(--ui-space-2);
 }
 
@@ -190,6 +208,9 @@
     flex: 1;
     border-right: none;
     border-top: 1px solid var(--ui-border-subtle);
+  }
+
+  .inner {
     padding: var(--ui-space-3) var(--ui-space-4);
   }
 

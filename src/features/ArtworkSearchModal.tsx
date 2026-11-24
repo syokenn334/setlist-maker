@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TrackWithArtwork } from '../types/index.ts';
 import type { ArtworkCandidate } from '../core/artwork.ts';
 import { searchItunesMulti } from '../core/artwork.ts';
-import { Button, Modal } from '../ui/controls.tsx';
+import { Button, Modal, Spinner } from '../ui/controls.tsx';
 import { Check, Search } from '../ui/icons.tsx';
 import type { ArtworkOverride } from '../App.tsx';
 import styles from './ArtworkSearchModal.module.css';
@@ -43,7 +43,7 @@ export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackW
         <Button type="submit" variant="secondary" disabled={loading || !query.trim()}><Search size={14} />検索</Button>
       </form>
       <ul className={styles.results} aria-busy={loading}>
-        {loading && [0, 1, 2].map((i) => <li key={i} className={styles.skeleton} />)}
+        {loading && <li className={styles.loading}><Spinner size={24} label="検索中" /></li>}
         {!loading && results.length === 0 && <li className={styles.empty}>見つかりませんでした</li>}
         {!loading && results.map((r, i) => {
           const used = r.url === track.artworkUrl;

@@ -86,7 +86,7 @@ export function Slider({ label, value, min, max, step, onChange, format, disable
         step={step}
         value={value}
         disabled={disabled}
-        style={{ '--fill': `${pct}%` } as React.CSSProperties}
+        style={{ '--fill-ratio': pct / 100 } as React.CSSProperties}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
@@ -183,5 +183,14 @@ export function Progress({ value, max }: { value: number; max: number }) {
     <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}>
       <div className={styles.progressBar} style={{ width: `${max ? (value / max) * 100 : 0}%` }} />
     </div>
+  );
+}
+
+/** Radix Themes Spinner: 8 leaves fading in turn (800ms), drawn in the current text colour at 65% opacity */
+export function Spinner({ size = 16, label }: { size?: number; label?: string }) {
+  return (
+    <span className={styles.spinner} style={{ width: size, height: size }} role={label ? 'status' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+      {Array.from({ length: 8 }, (_, i) => <span key={i} className={styles.spinnerLeaf} style={{ transform: `rotate(${i * 45}deg)`, animationDelay: `${((i - 8) / 8) * 800}ms` }} />)}
+    </span>
   );
 }

@@ -12,11 +12,18 @@ import type { PageSlice } from '../core/pagination.ts';
 import type { BackgroundSettings } from '../core/background.ts';
 import { placeBackground } from '../core/background.ts';
 import { computeGeometry, TYPE, LINE_HEIGHT, COLUMN_GUTTER } from '../core/imageLayout.ts';
+
+/** 枠を中身の左右に張り出す幅 (レイアウトの余白 24px の半分) */
+const ROW_FRAME_OUTSET = 12;
 import styles from './SetlistImage.module.css';
 
 export interface SetlistImageProps {
   preset: CanvasPreset;
   columns: 1 | 2;
+  /** 1 列の曲数 (null は 10) */
+  rowsLimit: number | null;
+  /** 行ごとの枠 (曲名の枠) */
+  rowFrame: boolean;
   theme: ImageTheme;
   metadata: SetlistMetadata;
   /** 全曲 (ページの曲は slice で切り出す) */
@@ -33,8 +40,8 @@ export interface SetlistImageProps {
 }
 
 export function SetlistImage(props: SetlistImageProps) {
-  const { preset, columns, theme, metadata, tracks, slice, pageIndex, pageCount, hidden, background, qrDataUrl, substitutes, onTrackClick } = props;
-  const g = computeGeometry(preset, columns);
+  const { preset, columns, rowsLimit, rowFrame, theme, metadata, tracks, slice, pageIndex, pageCount, hidden, background, qrDataUrl, substitutes, onTrackClick } = props;
+  const g = computeGeometry(preset, columns, rowsLimit);
   const maxNo = tracks.reduce((m, t, i) => Math.max(m, t.number ?? i + 1), 0);
   const numberDigits = Math.max(2, String(maxNo).length);
   const bg = placeBackground(background, g.width, g.height);
@@ -94,8 +101,8 @@ export function SetlistImage(props: SetlistImageProps) {
           rows.push(
             <div
               key={index}
-              className={`${styles.row} ${onTrackClick ? styles.clickable : ''}`}
-              style={{ left: x, top: y, width: g.columnWidth, height: g.artwork }}
+              className={`${styles.row} ${rowFrame ? styles.framed : ''} ${onTrackClick ? styles.clickable : ''}`}
+              style={{ left: x - ROW_FRAME_OUTSET, top: y, width: g.columnWidth + ROW_FRAME_OUTSET * 2, height: g.band, paddingInline: ROW_FRAME_OUTSET }}
               onClick={onTrackClick ? (e) => onTrackClick(index, e) : undefined}
             >
               <span className={styles.number} style={{ width: `${numberDigits}ch`, fontSize: g.subSize }}>{track.number ?? index + 1}</span>
@@ -130,7 +137,7 @@ export function SetlistImage(props: SetlistImageProps) {
           className={styles.qr}
           src={qrDataUrl}
           alt=""
-          style={{ left: g.width - g.marginX - g.qrSize, top: g.listTop + g.pitch * (g.rows - g.qrRows), width: g.qrSize, height: g.qrSize }}
+          style={{ left: g.width - g.marginX - g.qrSize, top: g.listTop + g.listHeight - g.qrSize, width: g.qrSize, height: g.qrSize }}
         />
       )}
 

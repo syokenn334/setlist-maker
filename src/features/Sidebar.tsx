@@ -3,10 +3,12 @@ import type { SetlistMetadata, TrackWithArtwork } from '../types/index.ts';
 import type { PresetId } from '../core/presets.ts';
 import { PRESET_IDS, PRESETS } from '../core/presets.ts';
 import type { SetlistImageProps } from '../image/SetlistImage.tsx';
+import { MAX_ROWS, MIN_ROWS } from '../core/imageLayout.ts';
 import { SetlistImage } from '../image/SetlistImage.tsx';
-import { Button, ErrorText, IconButton, Progress, Section, Segmented, TextInput } from '../ui/controls.tsx';
+import { Button, ErrorText, IconButton, Progress, Section, Segmented, Slider, Spinner, TextInput } from '../ui/controls.tsx';
 import { ChevronRight, FileText, PanelLeftClose, RotateCw, Share } from '../ui/icons.tsx';
 import { Scaled } from './Scaled.tsx';
+import { ScrollArea } from '../ui/ScrollArea.tsx';
 import { TrackListPanel } from './TrackListPanel.tsx';
 import { PlaylistSection } from './playlist/PlaylistSection.tsx';
 import type { PlaylistState } from './playlist/types.ts';
@@ -37,6 +39,8 @@ interface SidebarProps {
   onPresetChange: (id: PresetId) => void;
   columns: 1 | 2;
   onColumnsChange: (c: 1 | 2) => void;
+  rows: number;
+  onRowsChange: (r: number) => void;
   pageCount: number;
   playlist: PlaylistState;
   onPlaylistChange: (updater: (p: PlaylistState) => PlaylistState) => void;
@@ -65,6 +69,7 @@ export function Sidebar(p: SidebarProps) {
   if (p.view === 'tracks' && p.loaded) {
     return (
       <aside className={`${styles.sidebar} ${p.open ? '' : styles.closed}`}>
+        <ScrollArea className={styles.scroll} contentClassName={styles.inner}>
         <TrackListPanel
           tracks={p.tracks}
           hidden={p.hidden}
@@ -72,12 +77,14 @@ export function Sidebar(p: SidebarProps) {
           onToggleHidden={p.onToggleHidden}
           onSearch={p.onSearchArtwork}
         />
+        </ScrollArea>
       </aside>
     );
   }
 
   return (
     <aside className={`${styles.sidebar} ${p.open ? '' : styles.closed}`}>
+      <ScrollArea className={styles.scroll} contentClassName={styles.inner}>
       <div className={styles.header}>
         <IconButton label="サイドバーを閉じる" onClick={p.onToggle} className={styles.toggle}><PanelLeftClose /></IconButton>
         <span className={styles.brand}>SETLIST MAKER</span>
@@ -99,7 +106,7 @@ export function Sidebar(p: SidebarProps) {
 
           {p.fetch.isFetching && (
             <div className={styles.progress}>
-              <div className={styles.progressHead}><span>アートワーク</span><span>{p.fetch.progress} / {p.fetch.total}</span></div>
+              <div className={styles.progressHead}><span className={styles.progressLabel}><Spinner />アートワーク</span><span>{p.fetch.progress} / {p.fetch.total}</span></div>
               <Progress value={p.fetch.progress} max={p.fetch.total} />
             </div>
           )}
@@ -150,6 +157,7 @@ export function Sidebar(p: SidebarProps) {
                 <Segmented label="カラム" value={p.columns} onChange={p.onColumnsChange} options={[{ value: 1, label: '1' }, { value: 2, label: '2' }]} />
               </div>
             )}
+            <Slider label="1 列の曲数" value={p.rows} min={MIN_ROWS} max={MAX_ROWS} step={1} onChange={p.onRowsChange} format={(v) => String(v)} />
           </Section>
 
           <Section title="プレイリスト" open={open.playlist} onToggle={() => setOpen((o) => ({ ...o, playlist: !o.playlist }))}>
@@ -157,6 +165,7 @@ export function Sidebar(p: SidebarProps) {
           </Section>
         </div>
       )}
+      </ScrollArea>
     </aside>
   );
 }

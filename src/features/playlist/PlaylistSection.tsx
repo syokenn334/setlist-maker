@@ -3,7 +3,7 @@ import type { TrackWithArtwork } from '../../types/index.ts';
 import type { PlaylistState } from './types.ts';
 import { INITIAL_PLAYLIST } from './types.ts';
 import { CREDENTIALS_URL, addToPlaylist, createPlaylist, getChannelTitle, judge, playlistUrl, requestToken, revokeToken, searchVideos, YouTubeError } from './youtube.ts';
-import { Button, ErrorText, IconButton, Progress, Segmented, Switch, TextInput } from '../../ui/controls.tsx';
+import { Button, ErrorText, IconButton, Progress, Segmented, Switch, TextInput, Spinner } from '../../ui/controls.tsx';
 import { Eye, EyeOff } from '../../ui/icons.tsx';
 import styles from './Playlist.module.css';
 
@@ -120,7 +120,7 @@ export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName,
 
       {(s.step === 'searching' || s.step === 'creating') && (
         <div className={styles.group}>
-          <span className={styles.label}>{s.step === 'searching' ? '検索中' : '作成中'}</span>
+          <span className={`${styles.label} ${styles.busy}`}><Spinner />{s.step === 'searching' ? '検索中' : '作成中'}</span>
           <Progress value={s.progress} max={s.step === 'searching' ? targets.length : s.matches.filter((m) => m.selected).length} />
         </div>
       )}

@@ -1,0 +1,64 @@
+.root {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.viewport {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+/* Radix Themes ScrollArea size 1: 4px wide, 4px margin, gray-a3 track, gray-a8 thumb */
+.scrollbar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.07);
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.root:hover .scrollbar,
+.visible {
+  opacity: 1;
+}
+
+.thumb {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.31);
+}
+
+/* larger hit area for dragging */
+.thumb::before {
+  content: '';
+  position: absolute;
+  inset: -4px -6px;
+}
+
+.thumb:hover,
+.thumb:active {
+  background: rgb(255 255 255 / 0.44);
+}
+
+@media (hover: none) {
+  .root:hover .scrollbar {
+    opacity: 0;
+  }
+
+  .visible {
+    opacity: 1;
+  }
+}

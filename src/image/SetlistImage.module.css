@@ -74,6 +74,10 @@
   gap: 16px;
 }
 
+.framed {
+  background: color-mix(in srgb, var(--img-text-primary) 5%, transparent);
+}
+
 .clickable {
   cursor: pointer;
 }

@@ -4,7 +4,7 @@ import { parseFile } from './core/parser.ts';
 import type { AppPhase, SetlistMetadata, TrackWithArtwork, ArtworkMatch } from './types/index.ts';
 import type { PresetId } from './core/presets.ts';
 import { PRESETS } from './core/presets.ts';
-import { computeGeometry } from './core/imageLayout.ts';
+import { computeGeometry, MAX_ROWS } from './core/imageLayout.ts';
 import { paginate } from './core/pagination.ts';
 import type { BackgroundSettings } from './core/background.ts';
 import { DEFAULT_BACKGROUND } from './core/background.ts';
@@ -49,6 +49,8 @@ export default function App() {
   const [metadata, setMetadata] = useState<SetlistMetadata>({ eventName: 'Setlist', djName: 'DJ', date: formatToday() });
   const [presetId, setPresetId] = useState<PresetId>('16:9');
   const [columnsPref, setColumnsPref] = useState<1 | 2>(2);
+  const [rowsLimit, setRowsLimit] = useState<number | null>(null);
+  const [rowFrame, setRowFrame] = useState(true);
   const [themeId, setThemeId] = useState<ThemeId>('dark');
   const [background, setBackground] = useState<BackgroundSettings>(DEFAULT_BACKGROUND);
   const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set());
@@ -67,7 +69,7 @@ export default function App() {
   const theme = themeById(themeId);
   const preset = PRESETS[presetId];
   const columns: 1 | 2 = preset.columns.includes(columnsPref) ? columnsPref : 1;
-  const geometry = computeGeometry(preset, columns);
+  const geometry = computeGeometry(preset, columns, rowsLimit);
   const rows = geometry.rows;
 
   const tracks: TrackWithArtwork[] = useMemo(() => {
@@ -147,7 +149,7 @@ export default function App() {
   const loaded = phase === 'loaded' && tracks.length > 0;
 
   const imageProps = {
-    preset, columns, theme, metadata, tracks, hidden, background, qrDataUrl,
+    preset, columns, rowsLimit, rowFrame, theme, metadata, tracks, hidden, background, qrDataUrl,
   };
 
   return (
@@ -176,6 +178,8 @@ export default function App() {
         onMetadataChange={setMetadata}
         presetId={presetId}
         onPresetChange={(id) => { setPresetId(id); setCurrentPage(0); }}
+        rows={rows}
+        onRowsChange={(r) => { setRowsLimit(r >= MAX_ROWS ? null : r); setCurrentPage(0); }}
         columns={columns}
         onColumnsChange={(c) => { setColumnsPref(c); setCurrentPage(0); }}
         pageCount={pageCount}
@@ -244,11 +248,12 @@ export default function App() {
         <StyleEditor
           tab={editorTab}
           onTabChange={setEditorTab}
-          initial={{ background, themeId, presetId }}
+          initial={{ background, themeId, presetId, rowFrame }}
           image={{ ...imageProps, slice: slices[page], pageIndex: page, pageCount }}
           onApply={(d) => {
             setBackground(d.background);
             setThemeId(d.themeId);
+            setRowFrame(d.rowFrame);
             if (d.presetId !== presetId) { setPresetId(d.presetId); setCurrentPage(0); }
             setEditorTab(null);
           }}

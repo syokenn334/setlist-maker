@@ -40,7 +40,7 @@ function CaseView({ c }: { c: MatrixCase }) {
     if (c.qr) QRCode.toDataURL('https://www.youtube.com/playlist?list=PLmatrix000000000000000000000000000', { margin: 2, width: 512 }).then(setQr);
   }, [c.sample, c.qr]);
 
-  const g = computeGeometry(preset, c.columns);
+  const g = computeGeometry(preset, c.columns, c.rows);
   const slices = tracks ? paginate({ total: tracks.length, rows: g.rows, columns: c.columns, qrRows: g.qrRows, qr: c.qr }) : [];
   const page = c.page === 'last' ? slices.length - 1 : Math.min(c.page, slices.length - 1);
   const ready = tracks && (!c.qr || qr);
@@ -65,6 +65,8 @@ function CaseView({ c }: { c: MatrixCase }) {
       <SetlistImage
         preset={preset}
         columns={c.columns}
+        rowsLimit={c.rows}
+        rowFrame={c.rowFrame}
         theme={theme}
         metadata={{ eventName: 'Sample Event', djName: 'DJ Sample', date: '2026.11.24' }}
         tracks={tracks}

@@ -26,6 +26,8 @@ export interface MatrixCase {
   hidden: number[];
   background: boolean;
   qr: boolean;
+  rows: number | null;
+  rowFrame: boolean;
 }
 
 function caseId(c: Omit<MatrixCase, 'id'>): string {
@@ -33,12 +35,14 @@ function caseId(c: Omit<MatrixCase, 'id'>): string {
   if (c.hidden.length) parts.push('hidden');
   if (c.background) parts.push('bg');
   if (c.qr) parts.push('qr');
+  if (c.rows) parts.push(`r${c.rows}`);
+  if (!c.rowFrame) parts.push('noframe');
   return parts.join('__');
 }
 
 function buildCases(): MatrixCase[] {
   const list: Omit<MatrixCase, 'id'>[] = [];
-  const base = { hidden: [] as number[], background: false, qr: false, page: 0 as number | 'last' };
+  const base = { hidden: [] as number[], background: false, qr: false, page: 0 as number | 'last', rows: null as number | null, rowFrame: true };
   for (const preset of PRESET_IDS) {
     for (const columns of PRESETS[preset].columns) {
       for (const t of THEMES) list.push({ ...base, sample: 'basic-36', preset, columns, theme: t.id });
@@ -48,6 +52,9 @@ function buildCases(): MatrixCase[] {
   }
   list.push({ ...base, sample: 'basic-36', preset: '16:9', columns: 2, theme: 'dark', hidden: [1, 4, 5] });
   for (const t of THEMES) list.push({ ...base, sample: 'basic-36', preset: '4:5', columns: 1, theme: t.id, hidden: [2], background: true });
+  list.push({ ...base, sample: 'basic-36', preset: '16:9', columns: 2, theme: 'dark', rowFrame: false });
+  list.push({ ...base, sample: 'basic-36', preset: '4:5', columns: 1, theme: 'dark', rows: 6 });
+  list.push({ ...base, sample: 'basic-36', preset: '16:9', columns: 2, theme: 'light', rows: 6, page: 'last', qr: true });
   list.push({ ...base, sample: 'large-120', preset: '4:5', columns: 1, theme: 'dark', page: 'last' });
   list.push({ ...base, sample: 'utf16le-10', preset: '1:1', columns: 1, theme: 'warm' });
   return list.map((c) => ({ ...c, id: caseId(c) }));

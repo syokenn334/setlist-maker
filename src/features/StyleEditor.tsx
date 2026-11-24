@@ -11,7 +11,7 @@ import type { BackgroundSettings } from '../core/background.ts';
 import { DEFAULT_BACKGROUND, ZOOM_MAX, ZOOM_MIN, loadAndDownscale, placeBackground } from '../core/background.ts';
 import type { ThemeId } from '../themes/index.ts';
 import { THEMES, themeById } from '../themes/index.ts';
-import { Button, ErrorText, IconButton, Slider } from '../ui/controls.tsx';
+import { Button, ErrorText, IconButton, Slider, Switch } from '../ui/controls.tsx';
 import { ImageIcon, Minus, Palette, Plus } from '../ui/icons.tsx';
 import { useFitScale } from '../hooks/useFitScale.ts';
 import { Scaled } from './Scaled.tsx';
@@ -19,7 +19,7 @@ import styles from './StyleEditor.module.css';
 
 export type EditorTab = 'bg' | 'theme';
 
-export interface StyleDraft { background: BackgroundSettings; themeId: ThemeId; presetId: PresetId }
+export interface StyleDraft { background: BackgroundSettings; themeId: ThemeId; presetId: PresetId; rowFrame: boolean }
 
 const MAX_FILE = 20 * 1024 * 1024;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -43,9 +43,9 @@ export function StyleEditor({ tab, onTabChange, initial, image, onApply, onCance
 
   // Re-paginate for the draft preset so the preview matches what will be applied
   const columns: 1 | 2 = preset.columns.includes(image.columns) ? image.columns : 1;
-  const g = computeGeometry(preset, columns);
+  const g = computeGeometry(preset, columns, image.rowsLimit);
   const slices = paginate({ total: image.tracks.length, rows: g.rows, columns, qrRows: g.qrRows, qr: false });
-  const imgProps: SetlistImageProps = { ...image, preset, columns, theme, background: bg, slice: slices[0], pageIndex: 0, pageCount: slices.length, onTrackClick: undefined };
+  const imgProps: SetlistImageProps = { ...image, preset, columns, theme, rowFrame: draft.rowFrame, background: bg, slice: slices[0], pageIndex: 0, pageCount: slices.length, onTrackClick: undefined };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
@@ -200,6 +200,8 @@ export function StyleEditor({ tab, onTabChange, initial, image, onApply, onCance
               <Slider label="オーバーレイ" value={bg.overlay} min={0} max={1} step={0.01} disabled={!bg.src} onChange={(v) => setBg({ overlay: v })} format={(v) => `${Math.round(v * 100)}%`} />
             </>
           ) : (
+            <>
+            <Switch label="曲名の枠" checked={draft.rowFrame} onChange={(v) => setDraft((d) => ({ ...d, rowFrame: v }))} />
             <div className={styles.themes} role="radiogroup" aria-label="テーマ">
               {THEMES.map((t) => (
                 <button key={t.id} type="button" role="radio" aria-checked={draft.themeId === t.id} className={`${styles.themeCard} ${draft.themeId === t.id ? styles.themeActive : ''}`} onClick={() => setDraft((d) => ({ ...d, themeId: t.id }))}>
@@ -210,6 +212,7 @@ export function StyleEditor({ tab, onTabChange, initial, image, onApply, onCance
                 </button>
               ))}
             </div>
+            </>
           )}
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void pickFile(e.target.files?.[0]); e.target.value = ''; }} />
         </aside>

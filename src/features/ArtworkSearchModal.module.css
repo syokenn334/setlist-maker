@@ -118,10 +118,11 @@
   color: var(--ui-text-primary);
 }
 
-.skeleton {
-  height: 64px;
-  border-radius: var(--ui-radius-3);
-  background: var(--ui-bg-control);
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
 }
 
 .empty {
