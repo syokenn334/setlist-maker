@@ -1,0 +1,9 @@
+#	トラックタイトル	アーティスト	アルバム	BPM	時間	ジャンル
+1	とても長い曲名のテストケースで省略記号が正しく表示されるかを確認するためのタイトル	長いアーティスト名の確認用ユニット feat. ゲストボーカル	アルバム名	128	4:01	J-Pop
+2	An Extremely Long English Title To Check Ellipsis Truncation Behavior (Extended Mix)	Very Long Artist Name & Another Collaborator	Album	124	6:12	House
+3	夜明けのプリズム (架空ユニット Remix)	架空ユニット, Sample Artist		132	3:45	Dance
+4	Silver Tide (feat. Demo Collective)	Null Signal	Silver Tide - Single		3:58	
+5	アーティスト名なし			140	2:59	Pop
+6	記号を含む曲名 <&> "quote"	Test Pattern	Symbols	150	3:33	Electronic
+7	絵文字なしの全角記号　～テスト～	ミナミノソラ		118	4:20	J-Pop
+8	Short	A		100	3:00	Pop

@@ -43,6 +43,14 @@ html2canvas によるクライアントサイドレンダリング。サーバ�
 - html2canvas (PNG エクスポート)
 - iTunes Search API (アートワーク取得)
 
+## 開発用ツール
+
+- `npm run samples`: `samples/` に架空の曲名で作った検証用 txt を生成する
+- `npm run matrix:update`: 全組み合わせ (サンプル x アスペクト比 x カラム数 x テーマ x 状態) の PNG を書き出し、基準画像として `.matrix/baseline/` に保存する
+- `npm run matrix`: 同じ組み合わせを `.matrix/current/` に書き出し、基準画像との差分を `.matrix/diff/` に出力する。`npm run matrix -- 16x9` のように指定すると、ID に文字列を含むケースだけを対象にする
+
+一覧は開発サーバーの `/setlist-maker/dev/matrix.html` でも確認できる。初回は `npx playwright install chromium` が必要。
+
 ## 更新履歴
 
 ### v0.6.0
