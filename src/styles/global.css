@@ -18,6 +18,11 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The UI does not zoom with pinch (see core/preventPageZoom.ts); scrolling still works */
+html {
+  touch-action: pan-x pan-y;
+}
+
 body {
   overflow: hidden;
 }

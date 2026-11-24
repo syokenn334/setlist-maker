@@ -53,24 +53,37 @@
   color: var(--ui-text-primary);
 }
 
-.canvasArea {
+.canvasWrap {
   flex: 1;
   min-height: 0;
+  position: relative;
   display: flex;
-  overflow: hidden;
-  /* pinch is handled by the stage itself */
-  touch-action: pan-x pan-y;
 }
 
-.scrollable {
+/* Scrolls when zoomed in; the native scrollbars are replaced by overlay ones */
+.canvasArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  /* pinch and pan are handled by the stage (the page itself does not zoom) */
+  touch-action: none;
 }
 
+.canvasArea::-webkit-scrollbar {
+  display: none;
+}
 
-/* Thin outline so the image edge is visible on any theme (docs/design-system.md 1.4.1).
-   margin: auto centres the image and keeps it scrollable from the top-left when zoomed in. */
-.frame {
+/* margin: auto centres the image and keeps it scrollable from the top-left when zoomed in */
+.frameWrap {
+  flex-shrink: 0;
   margin: auto;
+}
+
+/* Thin outline so the image edge is visible on any theme (docs/design-system.md 1.4.1) */
+.frame {
   outline: 1px solid var(--ui-border-subtle);
 }
 
