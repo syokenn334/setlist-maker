@@ -6,6 +6,9 @@
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   color: var(--img-text-primary);
   -webkit-font-smoothing: antialiased;
+  /* 数字は等幅 (1 文字ごとの幅をそろえる) */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 .background {
@@ -139,6 +142,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+.time {
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--img-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeGap {
+  margin-left: 0.5em;
+}
+
 .redacted {
   display: block;
   flex-shrink: 0;
@@ -146,7 +160,18 @@
   background: var(--img-surface);
 }
 
-.info .redacted + .redacted {
+.info .redacted + .time {
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--img-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeGap {
+  margin-left: 0.5em;
+}
+
+.redacted {
   margin-top: 6px;
 }
 

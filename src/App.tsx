@@ -120,7 +120,6 @@ export default function App() {
       setPlaylist((p) => ({
         ...p,
         step: p.accessToken ? 'signedIn' : 'credentials',
-        name: `${eventName} ${metadata.date}`.trim(),
         progress: 0, matches: [], createdUrl: null, error: null,
       }));
       setReviewOpen(false);
@@ -129,7 +128,7 @@ export default function App() {
     } catch {
       if (phase === 'idle') setDropError('ファイルを読み込めませんでした'); else setToast('ファイルを読み込めませんでした');
     }
-  }, [fetcher, phase, metadata.date]);
+  }, [fetcher, phase]);
 
   const onDragOver = (e: DragEvent) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragging(true); } };
   const onDragLeave = (e: DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); };

@@ -23,25 +23,33 @@ function SecretInput({ label, value, onChange }: { label: string; value: string;
   );
 }
 
-export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName, date, onOpenReview }: {
+export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName, onOpenReview }: {
   state: PlaylistState;
   onChange: Update;
   tracks: TrackWithArtwork[];
   hidden: ReadonlySet<number>;
   eventName: string;
-  date: string;
   onOpenReview: () => void;
 }) {
   const targets = tracks.map((_, i) => i).filter((i) => !hidden.has(i));
-  const fail = (e: unknown) => onChange((p) => ({ ...p, error: e instanceof Error ? e.message : 'エラーが発生しました' }));
+  const message = (e: unknown) => (e instanceof Error ? e.message : 'エラーが発生しました');
+  const fail = (e: unknown) => onChange((p) => ({ ...p, error: message(e) }));
+  // The token is no longer valid: go back to the sign-in step (the entered client ID / API key stay)
+  const expired = (e: unknown) => e instanceof YouTubeError && e.authExpired;
 
   const login = async () => {
     onChange((p) => ({ ...p, error: null }));
     try {
       const token = await requestToken(s.clientId.trim());
-      let account: string | null = null;
-      try { account = await getChannelTitle(token, s.apiKey.trim()); } catch { /* channel may not exist yet */ }
-      onChange((p) => ({ ...p, accessToken: token, account, step: 'signedIn', name: p.name || `${eventName} ${date}`.trim() }));
+      // Also checks the API key: a wrong key, a disabled API or the quota fail here instead of at search time
+      let account: string | null;
+      try {
+        account = await getChannelTitle(token, s.apiKey.trim());
+      } catch (e) {
+        await revokeToken(token).catch(() => undefined);
+        throw e;
+      }
+      onChange((p) => ({ ...p, accessToken: token, account, step: 'signedIn' }));
     } catch (e) { fail(e); }
   };
 
@@ -64,7 +72,8 @@ export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName,
       }
       onChange((p) => ({ ...p, step: 'review' }));
     } catch (e) {
-      onChange((p) => ({ ...p, step: matches.length ? 'review' : 'signedIn', error: e instanceof YouTubeError || e instanceof Error ? e.message : 'エラー' }));
+      if (expired(e)) { onChange((p) => ({ ...p, accessToken: null, account: null, step: 'credentials', error: message(e) })); return; }
+      onChange((p) => ({ ...p, step: matches.length ? 'review' : 'signedIn', error: message(e) }));
     }
   };
 
@@ -73,14 +82,16 @@ export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName,
     const videos = s.matches.filter((m) => m.selected).map((m) => m.selected!.videoId);
     onChange((p) => ({ ...p, step: 'creating', progress: 0, error: null }));
     try {
-      const id = await createPlaylist(s.name.trim() || `${eventName} ${date}`, s.privacy, token, key);
+      const id = await createPlaylist(eventName.trim() || 'Setlist', s.privacy, token, key);
       for (let n = 0; n < videos.length; n++) {
         await addToPlaylist(id, videos[n], token, key);
         onChange((p) => ({ ...p, progress: n + 1 }));
       }
       onChange((p) => ({ ...p, step: 'done', createdUrl: playlistUrl(id) }));
     } catch (e) {
-      onChange((p) => ({ ...p, step: 'review', error: `${e instanceof Error ? e.message : 'エラー'}（作成済みの分は YouTube に残っています）` }));
+      const note = `${message(e)}（作成済みの分は YouTube に残っています）`;
+      if (expired(e)) { onChange((p) => ({ ...p, accessToken: null, account: null, step: 'credentials', error: note })); return; }
+      onChange((p) => ({ ...p, step: 'review', error: note }));
     }
   };
 
@@ -108,7 +119,6 @@ export function PlaylistSection({ state: s, onChange, tracks, hidden, eventName,
 
       {s.step === 'signedIn' && (
         <>
-          <TextInput label="プレイリスト名" value={s.name} onChange={(v) => onChange((p) => ({ ...p, name: v }))} />
           <div className={styles.group}>
             <span className={styles.label}>公開範囲</span>
             <Segmented label="公開範囲" value={s.privacy} onChange={(v) => onChange((p) => ({ ...p, privacy: v }))} options={[{ value: 'unlisted', label: '限定公開' }, { value: 'public', label: '公開' }]} />

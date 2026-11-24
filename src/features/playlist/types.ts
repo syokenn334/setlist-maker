@@ -28,7 +28,6 @@ export interface PlaylistState {
   apiKey: string;
   accessToken: string | null;
   account: string | null;
-  name: string;
   privacy: 'unlisted' | 'public';
   step: PlaylistStep;
   progress: number;
@@ -41,6 +40,6 @@ export interface PlaylistState {
 
 export const INITIAL_PLAYLIST: PlaylistState = {
   clientId: '', apiKey: '', accessToken: null, account: null,
-  name: '', privacy: 'unlisted', step: 'credentials', progress: 0,
+  privacy: 'unlisted', step: 'credentials', progress: 0,
   matches: [], createdUrl: null, qrEnabled: true, qrOnAllPages: false, error: null,
 };

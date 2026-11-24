@@ -44,6 +44,9 @@ export function SetlistImage(props: SetlistImageProps) {
   const g = computeGeometry(preset, columns, rowsLimit);
   const maxNo = tracks.reduce((m, t, i) => Math.max(m, t.number ?? i + 1), 0);
   const numberDigits = Math.max(2, String(maxNo).length);
+  // 再生時間の列幅: 全曲で最も長い表記 (例 4:13 / 1:02:03) の数字の数 x 1ch (等幅数字) + コロンの幅
+  const longestTime = tracks.reduce((m, t) => ((t.time?.length ?? 0) > m.length ? t.time! : m), '0:00');
+  const timeWidth = `calc(${longestTime.replace(/\D/g, '').length}ch + ${(longestTime.match(/:/g) ?? []).length * 0.3}em)`;
   const bg = placeBackground(background, g.width, g.height);
   const blurPad = background.blur * 3;
 
@@ -116,6 +119,7 @@ export function SetlistImage(props: SetlistImageProps) {
                     <span className={styles.redacted} style={{ width: '40%', height: g.subSize * 0.5 }} />
                   </span>
                   <span className={styles.redacted} style={{ width: '3ch', height: g.subSize * 0.6, fontSize: g.subSize }} />
+                  <span className={`${styles.redacted} ${styles.timeGap}`} style={{ width: timeWidth, height: g.subSize * 0.6, fontSize: g.subSize }} />
                 </>
               ) : (
                 <>
@@ -124,6 +128,7 @@ export function SetlistImage(props: SetlistImageProps) {
                     <span className={`${styles.text} ${styles.artist}`} style={{ fontSize: g.subSize, lineHeight: LINE_HEIGHT, height: g.subSize * LINE_HEIGHT }}>{track.artist ?? ''}</span>
                   </span>
                   <span className={styles.bpm} style={{ fontSize: g.subSize }}>{track.bpm ? Math.round(track.bpm) : '–'}</span>
+                  <span className={`${styles.time} ${styles.timeGap}`} style={{ width: timeWidth, fontSize: g.subSize }}>{track.time || '–'}</span>
                 </>
               )}
             </div>,

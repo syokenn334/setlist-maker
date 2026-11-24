@@ -41,7 +41,7 @@ export async function requestToken(clientId: string): Promise<string> {
     const client = oauth2.initTokenClient({
       client_id: clientId,
       scope: YOUTUBE_SCOPE,
-      callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error(r.error_description || r.error || 'ログインできませんでした'))),
+      callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error(oauthMessage(r.error, r.error_description)))),
       error_callback: (e) => reject(new Error(e.type === 'popup_closed' ? 'ログインが中断されました' : e.type === 'popup_failed_to_open' ? 'ポップアップを開けませんでした' : e.message || 'ログインできませんでした')),
     });
     client.requestAccessToken({ prompt: 'consent' });
@@ -53,24 +53,73 @@ export async function revokeToken(token: string): Promise<void> {
   if (oauth2) await new Promise<void>((r) => oauth2.revoke(token, () => r()));
 }
 
+/** Google Identity Services の token エラー (OAuth 2.0 のエラーコード) */
+function oauthMessage(error?: string, description?: string): string {
+  if (error === 'access_denied') return 'Google アカウントへのアクセスが許可されませんでした';
+  if (error === 'invalid_client' || error === 'unauthorized_client') return 'クライアント ID が正しくありません';
+  return description || error || 'ログインできませんでした';
+}
+
+const GENERIC_FAILURE = 'YouTube API の呼び出しに失敗しました';
+const FORBIDDEN = 'YouTube に操作を拒否されました';
+
 export class YouTubeError extends Error {
+  readonly status: number;
   readonly reason: string;
-  constructor(message: string, reason: string) { super(message); this.reason = reason; }
+  /** トークンが無効 (期限切れ・取り消し)。ログインし直す必要がある */
+  readonly authExpired: boolean;
+  constructor(message: string, status: number, reason: string) {
+    super(message);
+    this.status = status;
+    this.reason = reason;
+    this.authExpired = status === 401 && reason !== 'youtubeSignupRequired';
+  }
+}
+
+/**
+ * HTTP ステータスと reason から利用者向けの文言を決める。
+ * reason は YouTube Data API のエラー (https://developers.google.com/youtube/v3/docs/errors) の
+ * error.errors[].reason と、Google API 共通の error.details[].reason (ErrorInfo) の両方を見る。
+ */
+function errorMessage(status: number, reasons: string[]): string {
+  const has = (...r: string[]) => r.some((x) => reasons.includes(x));
+  if (has('quotaExceeded', 'dailyLimitExceeded')) return 'YouTube API の 1 日の上限に達しました（Google Cloud のプロジェクトごと。太平洋時間の午前 0 時に回復します）';
+  if (has('rateLimitExceeded', 'userRateLimitExceeded', 'RATE_LIMIT_EXCEEDED')) return '短時間に呼び出しすぎました。少し待ってから再試行してください';
+  if (has('youtubeSignupRequired')) return 'この Google アカウントには YouTube チャンネルがありません。YouTube でチャンネルを作成してから再試行してください';
+  if (status === 401) return 'ログインの有効期限が切れました。もう一度ログインしてください';
+  if (has('keyInvalid', 'API_KEY_INVALID')) return 'API キーが正しくありません';
+  if (has('accessNotConfigured', 'SERVICE_DISABLED')) return 'Google Cloud で YouTube Data API v3 が有効になっていません';
+  if (has('ipRefererBlocked', 'API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_SERVICE_BLOCKED')) return 'API キーの制限で、このサイトからの呼び出しが許可されていません';
+  if (has('insufficientPermissions', 'ACCESS_TOKEN_SCOPE_INSUFFICIENT')) return 'YouTube の管理の権限が許可されていません。ログインし直して権限を許可してください';
+  if (has('maxPlaylistExceeded')) return 'チャンネルのプレイリスト数が上限に達しています';
+  if (has('videoNotFound')) return '選んだ動画が見つかりません（削除または非公開の可能性があります）';
+  if (has('forbidden')) return FORBIDDEN;
+  return GENERIC_FAILURE;
 }
 
 async function call<T>(path: string, token: string, apiKey: string, init?: RequestInit): Promise<T> {
   const sep = path.includes('?') ? '&' : '?';
-  const res = await fetch(`${API}/${path}${sep}key=${encodeURIComponent(apiKey)}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}/${path}${sep}key=${encodeURIComponent(apiKey)}`, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    });
+  } catch {
+    throw new YouTubeError('YouTube に接続できませんでした。ネットワークを確認してください', 0, 'network');
+  }
   if (!res.ok) {
-    let reason = String(res.status);
-    try { const body = await res.json(); reason = body?.error?.errors?.[0]?.reason ?? body?.error?.status ?? reason; } catch { /* ignore */ }
-    const message = reason === 'quotaExceeded' ? 'YouTube API の 1 日の上限に達しました'
-      : res.status === 401 ? 'ログインの有効期限が切れました。もう一度ログインしてください'
-        : 'YouTube API の呼び出しに失敗しました';
-    throw new YouTubeError(message, reason);
+    const reasons: string[] = [];
+    try {
+      const body = await res.json();
+      for (const e of body?.error?.errors ?? []) if (e?.reason) reasons.push(e.reason);
+      for (const d of body?.error?.details ?? []) if (d?.reason) reasons.push(d.reason);
+      if (body?.error?.status) reasons.push(body.error.status);
+    } catch { /* body is not JSON */ }
+    const message = errorMessage(res.status, reasons);
+    // 定型の文言にならなかったときも原因を追えるように、ステータスと reason を添える
+    const detail = message === GENERIC_FAILURE || message === FORBIDDEN ? `（${res.status}${reasons[0] ? ` ${reasons[0]}` : ''}）` : '';
+    throw new YouTubeError(message + detail, res.status, reasons[0] ?? String(res.status));
   }
   return res.json() as Promise<T>;
 }

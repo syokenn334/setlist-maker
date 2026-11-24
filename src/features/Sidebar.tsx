@@ -161,7 +161,7 @@ export function Sidebar(p: SidebarProps) {
           </Section>
 
           <Section title="プレイリスト" open={open.playlist} onToggle={() => setOpen((o) => ({ ...o, playlist: !o.playlist }))}>
-            <PlaylistSection state={p.playlist} onChange={p.onPlaylistChange} tracks={p.tracks} hidden={p.hidden} eventName={p.metadata.eventName} date={p.metadata.date} onOpenReview={p.onOpenReview} />
+            <PlaylistSection state={p.playlist} onChange={p.onPlaylistChange} tracks={p.tracks} hidden={p.hidden} eventName={p.metadata.eventName} onOpenReview={p.onOpenReview} />
           </Section>
         </div>
       )}
