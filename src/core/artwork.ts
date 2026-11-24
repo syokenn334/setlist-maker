@@ -1,8 +1,11 @@
 /**
  * アートワーク取得モジュール
  *
- * iTunes Search API (プライマリ) + Deezer API (フォールバック) で
- * 楽曲のアルバムアートワークURLを取得する
+ * iTunes Search API で楽曲のアルバムアートワーク URL を取得する
+ *
+ * - iTunes Search API の制限は「毎分約 20 回」なので、全リクエストを共通の
+ *   間隔制御 (throttledFetch) に通す
+ * - Deezer API はブラウザからの呼び出しを許可していない (CORS ヘッダーなし) ため使わない
  */
 
 // --- 型定義 ---
@@ -11,7 +14,7 @@ export interface ArtworkResult {
   /** アートワークURL (見つからない場合は null) */
   url: string | null;
   /** 取得元 API */
-  source: "itunes" | "deezer" | null;
+  source: "itunes" | null;
   /** 検索に使ったクエリ */
   query: string;
   /** マッチした曲名 (API側) */
@@ -39,7 +42,7 @@ export function buildSearchQueries(
 
   // 2. タイトルからリミックス表記を除去
   const titleNoRemix = title
-    .replace(/\s*[\[（(][^\]）)]*(?:remix|リミックス)[^\]）)]*[\]）)]/gi, "")
+    .replace(/\s*[[（(][^\]）)]*(?:remix|リミックス)[^\]）)]*[\]）)]/gi, "")
     .replace(/\s*-\s*(?:single|EP)$/i, "")
     .trim();
   if (titleNoRemix !== title) {
@@ -48,16 +51,14 @@ export function buildSearchQueries(
 
   // 3. feat. 除去
   const titleNoFeat = titleNoRemix
-    .replace(/\s*[\(（]feat\.?\s*[^\)）]*[\)）]/gi, "")
+    .replace(/\s*[(（]feat\.?\s*[^)）]*[)）]/gi, "")
     .trim();
   if (titleNoFeat !== titleNoRemix) {
     queries.push(`${artist} ${titleNoFeat}`);
   }
 
   // 4. アーティスト名を最初の一人だけにする
-  const primaryArtist = artist
-    .split(/[,、&＆+＋]/)
-    [0].trim();
+  const primaryArtist = artist.split(/[,、&＆+＋]/)[0].trim();
   if (primaryArtist !== artist) {
     queries.push(`${primaryArtist} ${titleNoFeat || titleNoRemix || title}`);
   }
@@ -70,6 +71,23 @@ export function buildSearchQueries(
 }
 
 // --- iTunes Search API ---
+
+/** iTunes Search API: approximately 20 calls per minute -> one request every 3 s */
+const ITUNES_MIN_INTERVAL_MS = 3000;
+let nextRequestAt = 0;
+
+/** Serializes iTunes requests so they are at least ITUNES_MIN_INTERVAL_MS apart. */
+async function throttledFetch(url: string): Promise<Response> {
+  const now = Date.now();
+  const startAt = Math.max(now, nextRequestAt);
+  nextRequestAt = startAt + ITUNES_MIN_INTERVAL_MS;
+  if (startAt > now) {
+    await new Promise((resolve) => setTimeout(resolve, startAt - now));
+  }
+  return fetch(url);
+}
+
+const ITUNES_PARAMS = { entity: "musicTrack", country: "jp", lang: "ja_jp" };
 
 interface ITunesResult {
   resultCount: number;
@@ -98,14 +116,12 @@ export async function searchItunesMulti(
 ): Promise<ArtworkCandidate[]> {
   const url = `https://itunes.apple.com/search?${new URLSearchParams({
     term: query,
-    entity: "musicTrack",
+    ...ITUNES_PARAMS,
     limit: String(limit),
-    country: "jp",
-    lang: "ja_jp",
   })}`;
 
   try {
-    const res = await fetch(url);
+    const res = await throttledFetch(url);
     if (!res.ok) return [];
 
     const data = (await res.json()) as ITunesResult;
@@ -128,12 +144,12 @@ export async function searchItunesMulti(
 export async function searchItunes(query: string): Promise<ArtworkResult | null> {
   const url = `https://itunes.apple.com/search?${new URLSearchParams({
     term: query,
-    entity: "musicTrack",
+    ...ITUNES_PARAMS,
     limit: "5",
   })}`;
 
   try {
-    const res = await fetch(url);
+    const res = await throttledFetch(url);
     if (!res.ok) return null;
 
     const data = (await res.json()) as ITunesResult;
@@ -156,55 +172,10 @@ export async function searchItunes(query: string): Promise<ArtworkResult | null>
   }
 }
 
-// --- Deezer API ---
-
-interface DeezerResult {
-  data: {
-    title: string;
-    artist: { name: string };
-    album: {
-      title: string;
-      cover_big: string;
-      cover_xl: string;
-    };
-  }[];
-}
+// --- メイン ---
 
 /**
- * Deezer API でアートワークを検索
- */
-export async function searchDeezer(query: string): Promise<ArtworkResult | null> {
-  const url = `https://api.deezer.com/search?${new URLSearchParams({
-    q: query,
-    limit: "5",
-  })}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as DeezerResult;
-    if (!data.data || data.data.length === 0) return null;
-
-    const track = data.data[0];
-    return {
-      url: track.album.cover_xl || track.album.cover_big,
-      source: "deezer",
-      query,
-      matchedTitle: track.title,
-      matchedArtist: track.artist.name,
-      album: track.album.title,
-    };
-  } catch {
-    return null;
-  }
-}
-
-// --- メイン: 二段構え検索 ---
-
-/**
- * iTunes → Deezer のフォールバック戦略でアートワークを取得
- * 各APIに対して検索クエリを段階的に緩和して試行
+ * 検索クエリを段階的に緩和しながら iTunes でアートワークを探す
  */
 export async function fetchArtwork(
   artist: string,
@@ -212,19 +183,12 @@ export async function fetchArtwork(
 ): Promise<ArtworkResult> {
   const queries = buildSearchQueries(artist, title);
 
-  // 1. iTunes で全クエリを試行
   for (const query of queries) {
     const result = await searchItunes(query);
     if (result) return result;
   }
 
-  // 2. Deezer で全クエリを試行 (フォールバック)
-  for (const query of queries) {
-    const result = await searchDeezer(query);
-    if (result) return result;
-  }
-
-  // 3. どちらでも見つからない
+  // 見つからない
   return {
     url: null,
     source: null,

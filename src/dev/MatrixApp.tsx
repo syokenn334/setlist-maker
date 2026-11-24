@@ -35,7 +35,7 @@ function CaseView({ matrixCase }: { matrixCase: MatrixCase }) {
     });
   }, [matrixCase.sample]);
 
-  // Page split mirrors App.tsx (no logo): rows x columns per page.
+  // Page split mirrors App.tsx: rows x columns per page.
   const perPage = matrixCase.rowsPerPage * matrixCase.columns;
   const pageCount = tracks ? Math.max(1, Math.ceil(tracks.length / perPage)) : 1;
   const page = matrixCase.page === 'last' ? pageCount - 1 : Math.min(matrixCase.page, pageCount - 1);

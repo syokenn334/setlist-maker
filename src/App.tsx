@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import { parseFile } from '@core/parser.ts';
 import type { Track } from '@core/parser.ts';
-import type { SetlistMetadata, TrackWithArtwork, AspectRatio, LogoBox } from '@core/layout.ts';
-import { CANVAS_SIZES, calculateRowHeight, computeLogoBox, computeLogoRowsOccupied, getLogoTopMargin } from '@core/layout.ts';
+import type { SetlistMetadata, TrackWithArtwork, AspectRatio } from '@core/layout.ts';
+import { CANVAS_SIZES } from '@core/layout.ts';
 import type { AppPhase } from './types/index.ts';
 import type { SetlistTemplate } from './templates/index.ts';
 import { defaultTemplate } from './templates/index.ts';
@@ -21,8 +22,6 @@ import { OverlayOpacitySlider } from './components/OverlayOpacitySlider/OverlayO
 import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
 import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
 import { PageNav } from './components/PageNav/PageNav.tsx';
-import { LogoUploader } from './components/LogoUploader/LogoUploader.tsx';
-import { LogoHeightSlider } from './components/LogoHeightSlider/LogoHeightSlider.tsx';
 import { ArtworkSearchModal } from './components/ArtworkSearchModal/ArtworkSearchModal.tsx';
 import type { ArtworkCandidate } from '@core/artwork.ts';
 import { SetlistPreview } from './preview/SetlistPreview.tsx';
@@ -37,7 +36,7 @@ function formatToday(): string {
   return `${y}.${m}.${day}`;
 }
 
-const sidebarVariants = {
+const sidebarVariants: Variants = {
   open: {
     width: 'var(--sidebar-width)',
     padding: '20px 16px',
@@ -87,9 +86,6 @@ export default function App() {
   const [artworkOverrides, setArtworkOverrides] = useState<Map<number, string>>(new Map());
   const [trackMenu, setTrackMenu] = useState<{ globalIndex: number; x: number; y: number } | null>(null);
   const [searchModal, setSearchModal] = useState<{ globalIndex: number } | null>(null);
-  const [logoImage, setLogoImage] = useState<string | null>(null);
-  const [logoNatural, setLogoNatural] = useState<{ width: number; height: number } | null>(null);
-  const [logoHeightScale, setLogoHeightScale] = useState(1.0);
 
   const [isMobile, setIsMobile] = useState(() =>
     window.matchMedia('(max-width: 768px)').matches,
@@ -124,51 +120,20 @@ export default function App() {
 
   const canvasSize = CANVAS_SIZES[aspectRatio];
 
-  // Logo box (aspect-fit within max constraints)
-  const logoBox: LogoBox | null = useMemo(() => {
-    if (!logoImage || !logoNatural) return null;
-    return computeLogoBox(logoNatural, canvasSize.width, canvasSize.height, columnCount, aspectRatio, logoHeightScale);
-  }, [logoImage, logoNatural, canvasSize, columnCount, aspectRatio, logoHeightScale]);
-
-  // Rows the logo covers (logo height + 1/3-row top margin)
-  const logoRowsOccupied = useMemo(() => {
-    if (!logoBox) return 0;
-    const { rowHeight, rowGap } = calculateRowHeight(rowsPerPage, canvasSize.height);
-    const topMargin = getLogoTopMargin(canvasSize.height);
-    return computeLogoRowsOccupied(logoBox.height, rowHeight, rowGap, topMargin);
-  }, [logoBox, rowsPerPage, canvasSize.height]);
-
-  // Page division logic
-  // - 2-col + logo: right column capacity reduced
-  // - 1-col + 16:9 + logo: full capacity (overlap handled via row shrink)
-  // - 1-col + 7:8 or 9:16 + logo: capacity reduced (displaced rows go to next page)
-  const maxRows = rowsPerPage;
-  const tracksPerPage = (() => {
-    if (columnCount === 2) {
-      return maxRows + Math.max(0, maxRows - logoRowsOccupied);
-    }
-    // 1-col
-    if (aspectRatio !== '16:9') {
-      return Math.max(0, maxRows - logoRowsOccupied);
-    }
-    return maxRows;
-  })();
+  // Page division: every page holds rowsPerPage rows per column
+  const tracksPerPage = rowsPerPage * columnCount;
   const pageCount = displayTracks.length <= tracksPerPage
     ? 1
     : Math.ceil(displayTracks.length / tracksPerPage);
 
+  // Clamp the page when pageCount shrinks (e.g. after changing rows per page)
+  const page = Math.min(currentPage, Math.max(0, pageCount - 1));
+
   const pageTracks = useMemo(() => {
     if (pageCount === 1) return displayTracks;
-    const start = currentPage * tracksPerPage;
+    const start = page * tracksPerPage;
     return displayTracks.slice(start, start + tracksPerPage);
-  }, [displayTracks, currentPage, tracksPerPage, pageCount]);
-
-  // Clamp currentPage when pageCount shrinks
-  useEffect(() => {
-    if (currentPage >= pageCount && pageCount > 0) {
-      setCurrentPage(pageCount - 1);
-    }
-  }, [currentPage, pageCount]);
+  }, [displayTracks, page, tracksPerPage, pageCount]);
 
   const handleRowsPerPageChange = useCallback((value: number) => {
     setRowsPerPage(value);
@@ -211,37 +176,18 @@ export default function App() {
         artworkUrl: null,
       }));
       setBareTracks(bare);
-      setPhase('fetching');
+      setPhase('loaded');
       artworkFetcher.start(result.tracks);
     } catch {
       setError('ファイルの読み込みに失敗しました。');
     }
   }, [artworkFetcher]);
 
-  // Watch fetcher completion to transition phase
-  const prevFetchingRef = useRef(false);
-  useEffect(() => {
-    if (prevFetchingRef.current && !artworkFetcher.isFetching && phase === 'fetching') {
-      setPhase('ready');
-    }
-    prevFetchingRef.current = artworkFetcher.isFetching;
-  }, [artworkFetcher.isFetching, phase]);
-
   const buildExportName = useCallback(() => {
     const title = metadata.eventName || 'setlist';
     const dateStr = metadata.date.replace(/\D/g, '');
     return `${title}_${dateStr}`;
   }, [metadata.eventName, metadata.date]);
-
-  const handleLogoUpload = useCallback((dataUrl: string, w: number, h: number) => {
-    setLogoImage(dataUrl);
-    setLogoNatural({ width: w, height: h });
-  }, []);
-
-  const handleLogoClear = useCallback(() => {
-    setLogoImage(null);
-    setLogoNatural(null);
-  }, []);
 
   const handleTrackClick = useCallback((globalIndex: number, e: ReactMouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -355,7 +301,7 @@ export default function App() {
                 {showPreview && (
                   <motion.div {...fadeSlide}>
                     <ExportButton
-                      disabled={phase !== 'ready'}
+                      disabled={artworkFetcher.isFetching}
                       exporting={exporting}
                       onClick={handleExport}
                     />
@@ -421,22 +367,6 @@ export default function App() {
                     </motion.div>
 
                     <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>ロゴ</div>
-                      <div className={styles.sectionBody}>
-                        <LogoUploader
-                          hasLogo={logoImage !== null}
-                          onUpload={handleLogoUpload}
-                          onClear={handleLogoClear}
-                        />
-                        <LogoHeightSlider
-                          value={logoHeightScale}
-                          onChange={setLogoHeightScale}
-                          disabled={logoImage === null}
-                        />
-                      </div>
-                    </motion.div>
-
-                    <motion.div className={styles.section} variants={sectionItem}>
                       <div className={styles.sectionTitle}>レイアウト</div>
                       <div className={styles.sectionBody}>
                         <RowsPerPageSlider value={rowsPerPage} onChange={handleRowsPerPageChange} />
@@ -460,7 +390,7 @@ export default function App() {
         {showPreview ? (
           <>
             <PageNav
-              currentPage={currentPage}
+              currentPage={page}
               pageCount={pageCount}
               onPageChange={setCurrentPage}
             />
@@ -474,15 +404,12 @@ export default function App() {
               rowsPerPage={rowsPerPage}
               columnCount={columnCount}
               aspectRatio={aspectRatio}
-              pageIndex={currentPage}
+              pageIndex={page}
               pageCount={pageCount}
               totalTrackCount={displayTracks.length}
-              globalIndexStart={currentPage * tracksPerPage}
+              globalIndexStart={page * tracksPerPage}
               hiddenTracks={hiddenTracks}
               onTrackClick={handleTrackClick}
-              logoImage={logoImage}
-              logoBox={logoBox}
-              logoRowsOccupied={logoRowsOccupied}
             />
           </>
         ) : (

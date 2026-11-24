@@ -8,7 +8,6 @@ interface TrackRowProps {
   globalIndex: number;
   hidden: boolean;
   layout: LayoutInfo;
-  shrinkWidth?: number;
   onClick: (globalIndex: number, event: MouseEvent<HTMLDivElement>) => void;
 }
 
@@ -17,7 +16,7 @@ const BASE_ROW_HEIGHT = 42;
 const BASE_TITLE_SIZE = 14;
 const BASE_SUB_SIZE = 12;
 
-export function TrackRow({ track, index, globalIndex, hidden, layout, shrinkWidth, onClick }: TrackRowProps) {
+export function TrackRow({ track, index, globalIndex, hidden, layout, onClick }: TrackRowProps) {
   const isOdd = index % 2 === 0; // 0-indexed; first row = visual odd
   const artSize = layout.rowHeight - 6;
   const num = String(track.number ?? index + 1).padStart(2, '\u00a0');
@@ -25,8 +24,6 @@ export function TrackRow({ track, index, globalIndex, hidden, layout, shrinkWidt
   const album = track.album ?? '';
   const sub = album ? `${artist} \u00b7 ${album}` : artist;
   const bpm = track.bpm ? String(Math.round(track.bpm)) : '\u2013';
-  const time = track.time ?? '\u2013';
-  const genre = track.genre ?? '\u2013';
 
   const rawScale = layout.rowHeight / BASE_ROW_HEIGHT;
   const scale = 1 + (rawScale - 1) * 0.35;
@@ -44,23 +41,13 @@ export function TrackRow({ track, index, globalIndex, hidden, layout, shrinkWidt
   return (
     <div
       className={`${styles.row} ${isOdd ? styles.rowOdd : ''}`}
-      style={{
-        height: layout.rowHeight,
-        ...(shrinkWidth !== undefined ? { width: shrinkWidth, alignSelf: 'flex-start' } : null),
-      }}
+      style={{ height: layout.rowHeight }}
       onClick={(e) => onClick(globalIndex, e)}
     >
       <div className={styles.num}>{num}</div>
       <div className={styles.art} style={{ width: artSize, height: artSize }}>
         {hidden ? (
-          <div className={styles.artSkeleton} style={{ width: artSize, height: artSize }}>
-            <span
-              className={styles.artSkeletonLabel}
-              style={{ fontSize: Math.max(10, Math.round(artSize * 0.35)) }}
-            >
-              ID
-            </span>
-          </div>
+          <div className={styles.artSkeleton} style={{ width: artSize, height: artSize }} />
         ) : track.artworkUrl ? (
           <img
             className={styles.artImg}
@@ -92,11 +79,7 @@ export function TrackRow({ track, index, globalIndex, hidden, layout, shrinkWidt
       {hidden ? (
         <div className={styles.metaRedacted} style={{ height: titleSize }} />
       ) : (
-        <>
-          <div className={`${styles.bpm} ${!track.bpm ? styles.bpmDash : ''}`}>{bpm}</div>
-          <div className={`${styles.time} ${!track.time ? styles.timeDash : ''}`}>{time}</div>
-          <div className={styles.genre}>{genre}</div>
-        </>
+        <div className={`${styles.bpm} ${!track.bpm ? styles.bpmDash : ''}`}>{bpm}</div>
       )}
     </div>
   );

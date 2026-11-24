@@ -3,8 +3,6 @@ import type { Track } from '@core/parser.ts';
 import type { TrackWithArtwork } from '@core/layout.ts';
 import { fetchArtwork } from '@core/artwork.ts';
 
-const DELAY_MS = 3200;
-
 interface ArtworkFetcherState {
   tracks: TrackWithArtwork[];
   progress: number; // 0..total
@@ -70,17 +68,7 @@ export function useArtworkFetcher() {
           total: parsedTracks.length,
           isFetching: i < parsedTracks.length - 1,
         });
-
-        // Rate-limit delay (skip after last track)
-        if (i < parsedTracks.length - 1) {
-          await new Promise<void>((resolve) => {
-            const timer = setTimeout(resolve, DELAY_MS);
-            controller.signal.addEventListener('abort', () => {
-              clearTimeout(timer);
-              resolve();
-            }, { once: true });
-          });
-        }
+        // Rate limiting is handled per request inside core/artwork.ts
       }
     })();
   }, []);

@@ -12,33 +12,40 @@ interface ArtworkSearchModalProps {
 export function ArtworkSearchModal({ initialQuery, onSelect, onClose }: ArtworkSearchModalProps) {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<ArtworkCandidate[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  // The initial search starts on mount, so start in the loading state when there is a query
+  const [loading, setLoading] = useState(() => initialQuery.trim() !== '');
+  const [searched, setSearched] = useState(() => initialQuery.trim() !== '');
   const reqIdRef = useRef(0);
 
-  const runSearch = useCallback(async (q: string) => {
-    const term = q.trim();
-    if (!term) {
-      setResults([]);
-      setSearched(true);
-      return;
-    }
+  /** Starts a search; results are applied only if no newer search has started. */
+  const startSearch = useCallback((term: string, apply: (found: ArtworkCandidate[]) => void) => {
     const id = ++reqIdRef.current;
-    setLoading(true);
-    setSearched(true);
-    const found = await searchItunesMulti(term, 5);
-    if (id === reqIdRef.current) {
-      setResults(found);
-      setLoading(false);
-    }
+    searchItunesMulti(term, 5).then((found) => {
+      if (id === reqIdRef.current) apply(found);
+    });
   }, []);
 
-  // Initial search
-  useEffect(() => {
-    if (initialQuery.trim()) {
-      runSearch(initialQuery);
+  const applyResults = useCallback((found: ArtworkCandidate[]) => {
+    setResults(found);
+    setLoading(false);
+  }, []);
+
+  const runSearch = useCallback((q: string) => {
+    const term = q.trim();
+    setSearched(true);
+    if (!term) {
+      setResults([]);
+      return;
     }
-  }, [initialQuery, runSearch]);
+    setLoading(true);
+    startSearch(term, applyResults);
+  }, [startSearch, applyResults]);
+
+  // Initial search (loading / searched are already initialised above)
+  useEffect(() => {
+    const term = initialQuery.trim();
+    if (term) startSearch(term, applyResults);
+  }, [initialQuery, startSearch, applyResults]);
 
   // ESC to close
   useEffect(() => {

@@ -1,4 +1,5 @@
-export type AppPhase = 'idle' | 'parsed' | 'fetching' | 'ready';
+/** idle: no file loaded yet / loaded: a setlist is shown (artwork may still be fetching) */
+export type AppPhase = 'idle' | 'loaded';
 
 export interface SetlistTemplate {
   id: string;
@@ -15,9 +16,6 @@ export interface SetlistTemplate {
   titleColor: string;
   subColor: string;
   bpmColor: string;
-  timeColor: string;
-  genreBgColor: string;
-  genreTextColor: string;
   noArtBackground: string;
   brandColor: string;
   overlayColor: string;
