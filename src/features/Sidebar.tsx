@@ -160,7 +160,7 @@ export function Sidebar(p: SidebarProps) {
             <Slider label="1 列の曲数" value={p.rows} min={MIN_ROWS} max={MAX_ROWS} step={1} onChange={p.onRowsChange} format={(v) => String(v)} />
           </Section>
 
-          <Section title="プレイリスト" open={open.playlist} onToggle={() => setOpen((o) => ({ ...o, playlist: !o.playlist }))}>
+          <Section title="YouTube プレイリスト作成" open={open.playlist} onToggle={() => setOpen((o) => ({ ...o, playlist: !o.playlist }))}>
             <PlaylistSection state={p.playlist} onChange={p.onPlaylistChange} tracks={p.tracks} hidden={p.hidden} eventName={p.metadata.eventName} onOpenReview={p.onOpenReview} />
           </Section>
         </div>
