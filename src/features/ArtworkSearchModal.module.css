@@ -75,13 +75,15 @@
   border-color: var(--ui-accent-focus);
 }
 
+.resultsScroll {
+  max-height: 360px;
+}
+
 .results {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--ui-space-1);
-  max-height: 360px;
-  overflow-y: auto;
 }
 
 .result {

@@ -6,7 +6,8 @@
  * - 行の枠 (曲名の枠): ジャケットの上下に ROW_PAD、枠と枠のあいだに ROW_GAP。枠を表示しないときも寸法は同じ
  * - 文字とジャケットの大きさは、1 列 10 曲 (MAX_ROWS) が区切り線と setlist-maker の表記のあいだ
  *   (上下の余白は最小 24px) に収まる大きさで決める。ジャケットは 4 の倍数
- * - 1 列の曲数を減らしたときは大きさを変えず、10 曲分の高さの中で行の間隔を広げる
+ * - 1 列の曲数 (6〜10) を減らしたときは、10 曲分の高さを曲数で等分して 1 曲の枠を大きくする。
+ *   文字と数字の大きさ・枠の上下の余白・枠の間隔は 10 曲のときのまま、ジャケットだけ大きくする
  * - QR: 短辺の 22% に最も近い「10 曲のときの行 n つ分」の大きさ。リストの下端にそろえる
  */
 import type { CanvasPreset } from './presets.ts';
@@ -18,7 +19,7 @@ export const MIN_LIST_GAP = 24;
 export const COLUMN_GUTTER = 48;
 export const QR_RATIO = 0.22;
 export const MAX_ROWS = 10;
-export const MIN_ROWS = 4;
+export const MIN_ROWS = 6;
 export const ROW_PAD = 6;
 export const ROW_GAP = 4;
 
@@ -76,18 +77,19 @@ export function computeGeometry(preset: CanvasPreset, columns: 1 | 2, rowsLimit?
   const rows = Math.min(MAX_ROWS, Math.max(MIN_ROWS, rowsLimit ?? MAX_ROWS));
   // 基準の 10 行 (MAX_ROWS * PITCH - ROW_GAP) を k 倍したものが、上下の最小余白を除いた高さに収まる最大の k
   const fit = (available - MIN_LIST_GAP * 2) / (MAX_ROWS * PITCH - ROW_GAP);
-  const artwork = Math.floor((ARTWORK * fit) / 4) * 4;
-  const k = artwork / ARTWORK;
+  const baseArtwork = Math.floor((ARTWORK * fit) / 4) * 4;
+  const k = baseArtwork / ARTWORK;
   const rowPad = Math.round(ROW_PAD * k);
   const rowGap = Math.round(ROW_GAP * k);
-  const band = artwork + rowPad * 2;
-  const fullPitch = band + rowGap;
+  const fullPitch = baseArtwork + rowPad * 2 + rowGap;
   const titleSize = Math.round(TYPE.title * k);
   const subSize = Math.round(TYPE.sub * k);
   const listHeight = MAX_ROWS * fullPitch - rowGap;
   const gapTop = Math.floor((available - listHeight) / 2 / 4) * 4;
-  // 曲数が少ないときは 10 曲分の高さに等間隔で並べる (先頭と末尾の位置は 10 曲のときと同じ)
-  const pitch = rows === MAX_ROWS ? fullPitch : (listHeight - band) / (rows - 1);
+  // 10 曲分の高さを曲数で等分し、増えた高さはジャケットに回す
+  const pitch = (listHeight + rowGap) / rows;
+  const band = pitch - rowGap;
+  const artwork = Math.floor(band - rowPad * 2);
   const cols = preset.columns.includes(columns) ? columns : 1;
   const columnWidth = (width - marginX * 2 - COLUMN_GUTTER * (cols - 1)) / cols;
   const short = Math.min(width, height);

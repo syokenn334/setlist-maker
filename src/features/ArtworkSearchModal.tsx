@@ -5,6 +5,7 @@ import { searchItunesMulti } from '../core/artwork.ts';
 import { Button, Modal, Spinner } from '../ui/controls.tsx';
 import { Check, Search } from '../ui/icons.tsx';
 import type { ArtworkOverride } from '../App.tsx';
+import { ScrollArea } from '../ui/ScrollArea.tsx';
 import styles from './ArtworkSearchModal.module.css';
 
 export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackWithArtwork; onSelect: (o: ArtworkOverride) => void; onClose: () => void }) {
@@ -42,6 +43,7 @@ export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackW
         <input className={styles.input} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="アーティスト 曲名" aria-label="検索語" autoFocus />
         <Button type="submit" variant="secondary" disabled={loading || !query.trim()}><Search size={14} />検索</Button>
       </form>
+      <ScrollArea className={styles.resultsScroll}>
       <ul className={styles.results} aria-busy={loading}>
         {loading && <li className={styles.loading}><Spinner size={24} label="検索中" /></li>}
         {!loading && results.length === 0 && <li className={styles.empty}>見つかりませんでした</li>}
@@ -58,6 +60,7 @@ export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackW
           );
         })}
       </ul>
+      </ScrollArea>
       <Button variant="ghost" block onClick={() => onSelect({ url: null, match: 'none' })}>ジャケットなし</Button>
     </Modal>
   );

@@ -6,6 +6,8 @@
 
 .viewport {
   height: 100%;
+  /* lets the root cap the height with max-height */
+  max-height: inherit;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
