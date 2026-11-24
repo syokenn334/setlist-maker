@@ -1,0 +1,73 @@
+.pages {
+  list-style: none;
+  display: flex;
+  gap: var(--ui-space-3);
+  overflow-x: auto;
+  padding-bottom: var(--ui-space-1);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-space-1);
+}
+
+.thumb {
+  outline: 1px solid var(--ui-border-subtle);
+  border-radius: 2px;
+}
+
+.pageLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+}
+
+.spec {
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+}
+
+.dim {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
+.progress {
+  flex: 1;
+}
+
+.count {
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.each {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+/* Full-size pages rendered off screen for capture */
+.offscreen {
+  position: fixed;
+  left: -100000px;
+  top: 0;
+  pointer-events: none;
+}

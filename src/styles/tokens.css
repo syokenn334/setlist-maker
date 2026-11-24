@@ -1,0 +1,66 @@
+/*
+ * UI tokens. Same values as the Figma variable collection "setlist / ui"
+ * (docs/design-system.md 1.1-1.4.1). Colors: Radix Colors 3.0.0 (gray-dark, ruby-dark).
+ * Spacing / radius / type: Radix Themes 3.3.0 (scaling 100%, radius medium).
+ */
+:root {
+  /* Color */
+  --ui-bg-app: #111111;           /* gray-dark 1 */
+  --ui-bg-panel: #191919;         /* gray-dark 2 */
+  --ui-bg-control: #222222;       /* gray-dark 3 */
+  --ui-bg-control-hover: #2a2a2a; /* gray-dark 4 */
+  --ui-bg-selected: #313131;      /* gray-dark 5 */
+  --ui-bg-stage: #222222;         /* gray-dark 3: preview stage, distinct from the Dark image theme */
+  --ui-bg-solid-neutral: #6e6e6e; /* gray-dark 9 */
+  --ui-border-subtle: #3a3a3a;    /* gray-dark 6 */
+  --ui-border-control: #484848;   /* gray-dark 7 */
+  --ui-border-control-hover: #606060; /* gray-dark 8 */
+  --ui-text-secondary: #b4b4b4;   /* gray-dark 11 */
+  --ui-text-primary: #eeeeee;     /* gray-dark 12 */
+  --ui-accent-focus: #b3445a;     /* ruby-dark 8 */
+  --ui-accent-solid: #e54666;     /* ruby-dark 9 */
+  --ui-accent-solid-hover: #ec5a72; /* ruby-dark 10 */
+  --ui-accent-text: #ff949d;      /* ruby-dark 11 */
+  --ui-text-on-accent: #111111;   /* gray-dark 1 (4.86:1 on ruby-dark 9) */
+
+  /* Space */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-6: 32px;
+  --ui-space-7: 40px;
+  --ui-space-8: 48px;
+  --ui-space-9: 64px;
+
+  /* Radius */
+  --ui-radius-1: 3px;
+  --ui-radius-2: 4px;
+  --ui-radius-3: 6px;
+  --ui-radius-4: 8px;
+  --ui-radius-5: 12px;
+  --ui-radius-6: 16px;
+
+  /* Type (font-size / line-height pairs) */
+  --ui-font-size-1: 12px;
+  --ui-line-height-1: 16px;
+  --ui-font-size-2: 14px;
+  --ui-line-height-2: 20px;
+  --ui-font-size-3: 16px;
+  --ui-line-height-3: 24px;
+  --ui-font-size-4: 18px;
+  --ui-line-height-4: 26px;
+  --ui-font-size-5: 20px;
+  --ui-line-height-5: 28px;
+  --ui-font-regular: 400;
+  --ui-font-medium: 500;
+  --ui-font-bold: 700;
+
+  /* Sizes */
+  --ui-size-control: 32px;  /* Radix Themes size-2 */
+  --ui-size-touch: 44px;    /* Apple HIG minimum touch target (mobile) */
+  --ui-size-sidebar: 320px;
+
+  --ui-font-family: 'Inter', 'Noto Sans JP', sans-serif;
+}

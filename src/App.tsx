@@ -1,454 +1,262 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { Variants } from 'framer-motion';
-import { parseFile } from '@core/parser.ts';
-import type { Track } from '@core/parser.ts';
-import type { SetlistMetadata, TrackWithArtwork, AspectRatio } from '@core/layout.ts';
-import { CANVAS_SIZES } from '@core/layout.ts';
-import type { AppPhase } from './types/index.ts';
-import type { SetlistTemplate } from './templates/index.ts';
-import { defaultTemplate } from './templates/index.ts';
+import { useCallback, useMemo, useState } from 'react';
+import type { DragEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { parseFile } from './core/parser.ts';
+import type { AppPhase, SetlistMetadata, TrackWithArtwork, ArtworkMatch } from './types/index.ts';
+import type { PresetId } from './core/presets.ts';
+import { PRESETS } from './core/presets.ts';
+import { computeGeometry } from './core/imageLayout.ts';
+import { paginate } from './core/pagination.ts';
+import type { BackgroundSettings } from './core/background.ts';
+import { DEFAULT_BACKGROUND } from './core/background.ts';
+import type { ThemeId } from './themes/index.ts';
+import { themeById } from './themes/index.ts';
 import { useArtworkFetcher } from './hooks/useArtworkFetcher.ts';
-import { useExport } from './hooks/useExport.ts';
-import { DropZone } from './components/DropZone/DropZone.tsx';
-import { ProgressBar } from './components/ProgressBar/ProgressBar.tsx';
-import { MetadataEditor } from './components/MetadataEditor/MetadataEditor.tsx';
-import { TemplatePicker } from './components/TemplatePicker/TemplatePicker.tsx';
-import { BackgroundUploader } from './components/BackgroundUploader/BackgroundUploader.tsx';
-import { ExportButton } from './components/ExportButton/ExportButton.tsx';
-import { RowsPerPageSlider } from './components/RowsPerPageSlider/RowsPerPageSlider.tsx';
-import { OverlayOpacitySlider } from './components/OverlayOpacitySlider/OverlayOpacitySlider.tsx';
-import { ColumnCountToggle } from './components/ColumnCountToggle/ColumnCountToggle.tsx';
-import { AspectRatioToggle } from './components/AspectRatioToggle/AspectRatioToggle.tsx';
-import { PageNav } from './components/PageNav/PageNav.tsx';
-import { ArtworkSearchModal } from './components/ArtworkSearchModal/ArtworkSearchModal.tsx';
-import type { ArtworkCandidate } from '@core/artwork.ts';
-import { SetlistPreview } from './preview/SetlistPreview.tsx';
-import type { SetlistPreviewHandle } from './preview/SetlistPreview.tsx';
+import { useQrCode } from './hooks/useQrCode.ts';
+import { Sidebar } from './features/Sidebar.tsx';
+import type { SidebarView } from './features/Sidebar.tsx';
+import { PreviewStage } from './features/PreviewStage.tsx';
+import { ArtworkSearchModal } from './features/ArtworkSearchModal.tsx';
+import { ExportModal } from './features/ExportModal.tsx';
+import { StyleEditor } from './features/StyleEditor.tsx';
+import type { EditorTab } from './features/StyleEditor.tsx';
+import { TrackMenu } from './features/TrackMenu.tsx';
+import { PlaylistReview } from './features/playlist/PlaylistReview.tsx';
+import type { PlaylistState } from './features/playlist/types.ts';
+import { INITIAL_PLAYLIST } from './features/playlist/types.ts';
+import { Toast } from './ui/controls.tsx';
+import { Share } from './ui/icons.tsx';
 import styles from './App.module.css';
 
 function formatToday(): string {
   const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}.${m}.${day}`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const sidebarVariants: Variants = {
-  open: {
-    width: 'var(--sidebar-width)',
-    padding: '20px 16px',
-    transition: { type: 'spring', stiffness: 300, damping: 30 },
-  },
-  closed: {
-    width: 52,
-    padding: '20px 8px',
-    transition: { type: 'spring', stiffness: 300, damping: 30 },
-  },
-};
+const isTxt = (name: string) => /\.txt$/i.test(name);
 
-const fadeSlide = {
-  initial: { opacity: 0, height: 0 },
-  animate: { opacity: 1, height: 'auto', transition: { duration: 0.25 } },
-  exit: { opacity: 0, height: 0, transition: { duration: 0.2 } },
-};
+/** Dev only: `?qr=dummy` shows a QR code without the YouTube integration (Phase 9 check) */
+const DEV_DUMMY_PLAYLIST = import.meta.env.DEV && new URLSearchParams(location.search).get('qr') === 'dummy'
+  ? 'https://www.youtube.com/playlist?list=PLdummy0000000000000000000000000000' : null;
 
-const sectionStagger = {
-  animate: { transition: { staggerChildren: 0.06 } },
-};
-
-const sectionItem = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
-};
+export interface ArtworkOverride { url: string | null; match: Exclude<ArtworkMatch, 'pending'> }
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('idle');
   const [fileName, setFileName] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<SetlistMetadata>({
-    eventName: 'Setlist',
-    djName: 'DJ',
-    date: formatToday(),
-  });
-  const [template, setTemplate] = useState<SetlistTemplate>(defaultTemplate);
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [overlayOpacity, setOverlayOpacity] = useState(0.8);
-  const [rowsPerPage, setRowsPerPage] = useState(18);
-  const [columnCount, setColumnCount] = useState<1 | 2>(2);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
+  const [dropError, setDropError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [metadata, setMetadata] = useState<SetlistMetadata>({ eventName: 'Setlist', djName: 'DJ', date: formatToday() });
+  const [presetId, setPresetId] = useState<PresetId>('16:9');
+  const [columnsPref, setColumnsPref] = useState<1 | 2>(2);
+  const [themeId, setThemeId] = useState<ThemeId>('dark');
+  const [background, setBackground] = useState<BackgroundSettings>(DEFAULT_BACKGROUND);
+  const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set());
+  const [overrides, setOverrides] = useState<ReadonlyMap<number, ArtworkOverride>>(new Map());
   const [currentPage, setCurrentPage] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [hiddenTracks, setHiddenTracks] = useState<Set<number>>(new Set());
-  const [artworkOverrides, setArtworkOverrides] = useState<Map<number, string>>(new Map());
-  const [trackMenu, setTrackMenu] = useState<{ globalIndex: number; x: number; y: number } | null>(null);
-  const [searchModal, setSearchModal] = useState<{ globalIndex: number } | null>(null);
+  const [sidebarView, setSidebarView] = useState<SidebarView>('settings');
+  const [searchIndex, setSearchIndex] = useState<number | null>(null);
+  const [menu, setMenu] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [editorTab, setEditorTab] = useState<EditorTab | null>(null);
+  const [playlist, setPlaylist] = useState<PlaylistState>(INITIAL_PLAYLIST);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
-  const [isMobile, setIsMobile] = useState(() =>
-    window.matchMedia('(max-width: 768px)').matches,
-  );
+  const fetcher = useArtworkFetcher();
+  const theme = themeById(themeId);
+  const preset = PRESETS[presetId];
+  const columns: 1 | 2 = preset.columns.includes(columnsPref) ? columnsPref : 1;
+  const geometry = computeGeometry(preset, columns);
+  const rows = geometry.rows;
 
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 768px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, []);
-
-  const previewRef = useRef<SetlistPreviewHandle>(null);
-  const artworkFetcher = useArtworkFetcher();
-  const { exporting, exportPng, exportAllPages } = useExport();
-
-  // Derive display tracks: during/after fetching use artwork data, else bare tracks
-  // Apply per-track artwork overrides (manual jacket selection)
-  const [bareTracks, setBareTracks] = useState<TrackWithArtwork[]>([]);
-  const displayTracks: TrackWithArtwork[] = useMemo(() => {
-    const base = phase === 'idle'
-      ? []
-      : artworkFetcher.tracks.length > 0
-        ? artworkFetcher.tracks
-        : bareTracks;
-    if (artworkOverrides.size === 0) return base;
-    return base.map((t, i) => {
-      const url = artworkOverrides.get(i);
-      return url ? { ...t, artworkUrl: url } : t;
+  const tracks: TrackWithArtwork[] = useMemo(() => {
+    if (phase === 'idle') return [];
+    if (overrides.size === 0) return fetcher.tracks;
+    return fetcher.tracks.map((t, i) => {
+      const o = overrides.get(i);
+      return o ? { ...t, artworkUrl: o.url, artworkMatch: o.match } : t;
     });
-  }, [phase, artworkFetcher.tracks, bareTracks, artworkOverrides]);
+  }, [phase, fetcher.tracks, overrides]);
 
-  const canvasSize = CANVAS_SIZES[aspectRatio];
+  const playlistUrl = playlist.createdUrl ?? DEV_DUMMY_PLAYLIST;
+  const qrOn = !!playlistUrl && playlist.qrEnabled;
+  const qrDataUrl = useQrCode(qrOn ? playlistUrl : null, theme);
 
-  // Page division: every page holds rowsPerPage rows per column
-  const tracksPerPage = rowsPerPage * columnCount;
-  const pageCount = displayTracks.length <= tracksPerPage
-    ? 1
-    : Math.ceil(displayTracks.length / tracksPerPage);
+  const slices = useMemo(() => paginate({
+    total: tracks.length, rows, columns,
+    qrRows: geometry.qrRows, qr: qrOn, qrOnAllPages: playlist.qrOnAllPages,
+  }), [tracks.length, rows, columns, geometry.qrRows, qrOn, playlist.qrOnAllPages]);
+  const pageCount = slices.length;
+  const page = Math.min(currentPage, pageCount - 1);
 
-  // Clamp the page when pageCount shrinks (e.g. after changing rows per page)
-  const page = Math.min(currentPage, Math.max(0, pageCount - 1));
-
-  const pageTracks = useMemo(() => {
-    if (pageCount === 1) return displayTracks;
-    const start = page * tracksPerPage;
-    return displayTracks.slice(start, start + tracksPerPage);
-  }, [displayTracks, page, tracksPerPage, pageCount]);
-
-  const handleRowsPerPageChange = useCallback((value: number) => {
-    setRowsPerPage(value);
-    setCurrentPage(0);
-  }, []);
-
-  const handleColumnCountChange = useCallback((value: 1 | 2) => {
-    setColumnCount(value);
-    if (value === 2) setAspectRatio('16:9');
-    setCurrentPage(0);
-  }, []);
-
-  const handleAspectRatioChange = useCallback((value: AspectRatio) => {
-    setAspectRatio(value);
-    if (value === '9:16' || value === '7:8') setColumnCount(1);
-    setCurrentPage(0);
-  }, []);
+  const substitutes = useMemo(() => new Set(tracks.flatMap((t, i) => (t.artworkMatch === 'substitute' ? [i] : []))), [tracks]);
+  const missingCount = tracks.filter((t) => t.artworkMatch === 'none').length;
 
   const handleFile = useCallback(async (file: File) => {
-    setError(null);
-    artworkFetcher.abort();
-    setCurrentPage(0);
-    setHiddenTracks(new Set());
-    setArtworkOverrides(new Map());
-    setTrackMenu(null);
-    setSearchModal(null);
-
+    if (!isTxt(file.name)) {
+      if (phase === 'idle') setDropError('txt ファイルを選んでください'); else setToast('txt ファイルを選んでください');
+      return;
+    }
     try {
       const result = await parseFile(file);
       if (result.tracks.length === 0) {
-        setError('トラックが見つかりませんでした。rekordbox txt ファイルを確認してください。');
+        const msg = 'トラックが見つかりませんでした';
+        if (phase === 'idle') setDropError(msg); else setToast(msg);
         return;
       }
-
+      fetcher.abort();
+      setDropError(null);
       setFileName(file.name);
-      const baseName = file.name.replace(/\.\w+$/, '');
-      setMetadata((prev) => ({ ...prev, eventName: baseName }));
-      const bare: TrackWithArtwork[] = result.tracks.map((t: Track) => ({
-        ...t,
-        artworkUrl: null,
-      }));
-      setBareTracks(bare);
+      setMetadata((prev) => ({ ...prev, eventName: file.name.replace(/\.\w+$/, '') }));
+      setHidden(new Set());
+      setOverrides(new Map());
+      setCurrentPage(0);
+      setSidebarView('settings');
+      setPlaylist((p) => ({ ...p, createdUrl: null, matches: [] }));
       setPhase('loaded');
-      artworkFetcher.start(result.tracks);
+      fetcher.start(result.tracks);
     } catch {
-      setError('ファイルの読み込みに失敗しました。');
+      if (phase === 'idle') setDropError('ファイルを読み込めませんでした'); else setToast('ファイルを読み込めませんでした');
     }
-  }, [artworkFetcher]);
+  }, [fetcher, phase]);
 
-  const buildExportName = useCallback(() => {
-    const title = metadata.eventName || 'setlist';
-    const dateStr = metadata.date.replace(/\D/g, '');
-    return `${title}_${dateStr}`;
-  }, [metadata.eventName, metadata.date]);
+  const onDragOver = (e: DragEvent) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragging(true); } };
+  const onDragLeave = (e: DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); };
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) void handleFile(file);
+  };
 
-  const handleTrackClick = useCallback((globalIndex: number, e: ReactMouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setTrackMenu({ globalIndex, x: e.clientX, y: e.clientY });
+  const toggleHidden = useCallback((index: number) => {
+    setHidden((prev) => { const next = new Set(prev); if (next.has(index)) next.delete(index); else next.add(index); return next; });
   }, []);
 
-  const handleToggleHidden = useCallback(() => {
-    if (!trackMenu) return;
-    setHiddenTracks((prev) => {
-      const next = new Set(prev);
-      if (next.has(trackMenu.globalIndex)) next.delete(trackMenu.globalIndex);
-      else next.add(trackMenu.globalIndex);
-      return next;
-    });
-    setTrackMenu(null);
-  }, [trackMenu]);
+  const setOverride = useCallback((index: number, o: ArtworkOverride) => {
+    setOverrides((prev) => new Map(prev).set(index, o));
+  }, []);
 
-  const handleOpenSearch = useCallback(() => {
-    if (!trackMenu) return;
-    setSearchModal({ globalIndex: trackMenu.globalIndex });
-    setTrackMenu(null);
-  }, [trackMenu]);
+  const onTrackClick = useCallback((index: number, e: ReactMouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setMenu({ index, x: e.clientX, y: e.clientY });
+  }, []);
 
-  const handleSelectArtwork = useCallback((candidate: ArtworkCandidate) => {
-    if (!searchModal) return;
-    const target = searchModal.globalIndex;
-    setArtworkOverrides((prev) => {
-      const next = new Map(prev);
-      next.set(target, candidate.url);
-      return next;
-    });
-    setSearchModal(null);
-  }, [searchModal]);
+  const exportBaseName = `${metadata.eventName || 'setlist'}_${metadata.date.replace(/\D/g, '')}`;
+  const loaded = phase === 'loaded' && tracks.length > 0;
 
-  useEffect(() => {
-    if (!trackMenu) return;
-    const close = () => setTrackMenu(null);
-    window.addEventListener('mousedown', close);
-    window.addEventListener('touchstart', close);
-    window.addEventListener('resize', close);
-    window.addEventListener('scroll', close, true);
-    return () => {
-      window.removeEventListener('mousedown', close);
-      window.removeEventListener('touchstart', close);
-      window.removeEventListener('resize', close);
-      window.removeEventListener('scroll', close, true);
-    };
-  }, [trackMenu]);
-
-  const handleExport = useCallback(() => {
-    const baseName = buildExportName();
-    if (pageCount <= 1) {
-      const el = previewRef.current?.getCanvasElement() ?? null;
-      exportPng(el, `${baseName}.png`, canvasSize);
-    } else {
-      exportAllPages(
-        () => previewRef.current?.getCanvasElement() ?? null,
-        setCurrentPage,
-        pageCount,
-        baseName,
-        canvasSize,
-      );
-    }
-  }, [buildExportName, exportPng, exportAllPages, pageCount, canvasSize]);
-
-  const showPreview = phase !== 'idle' && displayTracks.length > 0;
+  const imageProps = {
+    preset, columns, theme, metadata, tracks, hidden, background, qrDataUrl,
+  };
 
   return (
-    <div className={styles.app}>
-      <motion.aside
-        className={styles.sidebar}
-        variants={sidebarVariants}
-        animate={sidebarOpen ? 'open' : 'closed'}
-        initial={false}
-      >
-        <div className={styles.header}>
-          <AnimatePresence>
-            {sidebarOpen && (
-              <motion.div
-                className={styles.logo}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                SETLIST MAKER
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.button
-            className={styles.toggleBtn}
-            onClick={() => setSidebarOpen((v) => !v)}
-            aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-            whileTap={{ scale: 0.9 }}
-          >
-            {sidebarOpen ? '\u00AB' : '\u00BB'}
-          </motion.button>
-        </div>
-
-        <AnimatePresence>
-          {(isMobile || sidebarOpen) && (
-            <motion.div
-              className={styles.sidebarContent}
-              initial={isMobile ? false : { opacity: 0 }}
-              animate={isMobile ? undefined : { opacity: 1, transition: { duration: 0.2, delay: 0.1 } }}
-              exit={isMobile ? undefined : { opacity: 0, transition: { duration: 0.1 } }}
-            >
-              <DropZone onFile={handleFile} currentFileName={fileName} />
-
-              <AnimatePresence>
-                {showPreview && (
-                  <motion.div {...fadeSlide}>
-                    <ExportButton
-                      disabled={artworkFetcher.isFetching}
-                      exporting={exporting}
-                      onClick={handleExport}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {error && (
-                  <motion.div
-                    className={styles.error}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {error}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {artworkFetcher.isFetching && (
-                  <motion.div {...fadeSlide}>
-                    <ProgressBar progress={artworkFetcher.progress} total={artworkFetcher.total} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {showPreview && (
-                  <motion.div
-                    className={styles.sections}
-                    variants={sectionStagger}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>メタ情報</div>
-                      <div className={styles.sectionBody}>
-                        <MetadataEditor metadata={metadata} onChange={setMetadata} />
-                      </div>
-                    </motion.div>
-
-                    <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>テーマ</div>
-                      <div className={styles.sectionBody}>
-                        <TemplatePicker current={template} onChange={setTemplate} />
-                      </div>
-                    </motion.div>
-
-                    <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>背景</div>
-                      <div className={styles.sectionBody}>
-                        <BackgroundUploader
-                          hasBackground={backgroundImage !== null}
-                          onUpload={setBackgroundImage}
-                          onClear={() => setBackgroundImage(null)}
-                        />
-                        <OverlayOpacitySlider value={overlayOpacity} onChange={setOverlayOpacity} disabled={backgroundImage === null} />
-                      </div>
-                    </motion.div>
-
-                    <motion.div className={styles.section} variants={sectionItem}>
-                      <div className={styles.sectionTitle}>レイアウト</div>
-                      <div className={styles.sectionBody}>
-                        <RowsPerPageSlider value={rowsPerPage} onChange={handleRowsPerPageChange} />
-                        <ColumnCountToggle value={columnCount} onChange={handleColumnCountChange} />
-                        <AspectRatioToggle
-                          value={aspectRatio}
-                          onChange={handleAspectRatioChange}
-                          disabled={columnCount === 2}
-                        />
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.aside>
+    <div
+      className={styles.app}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      <Sidebar
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen((v) => !v)}
+        view={sidebarView}
+        onViewChange={setSidebarView}
+        loaded={loaded}
+        dragging={dragging}
+        dropError={dropError}
+        onFile={(f) => void handleFile(f)}
+        fileName={fileName}
+        fetch={{ progress: fetcher.progress, total: fetcher.total, isFetching: fetcher.isFetching, missing: missingCount, onRetry: fetcher.retryMissing }}
+        onExport={() => setExportOpen(true)}
+        onOpenEditor={() => setEditorTab('bg')}
+        styleThumb={loaded ? { ...imageProps, slice: slices[0], pageIndex: 0, pageCount } : null}
+        reviewCount={substitutes.size + missingCount}
+        metadata={metadata}
+        onMetadataChange={setMetadata}
+        presetId={presetId}
+        onPresetChange={(id) => { setPresetId(id); setCurrentPage(0); }}
+        columns={columns}
+        onColumnsChange={(c) => { setColumnsPref(c); setCurrentPage(0); }}
+        pageCount={pageCount}
+        playlist={playlist}
+        onPlaylistChange={setPlaylist}
+        tracks={tracks}
+        hidden={hidden}
+        onToggleHidden={toggleHidden}
+        onSearchArtwork={setSearchIndex}
+        onOpenReview={() => setReviewOpen(true)}
+      />
 
       <main className={styles.main}>
-        {showPreview ? (
-          <>
-            <PageNav
-              currentPage={page}
-              pageCount={pageCount}
-              onPageChange={setCurrentPage}
-            />
-            <SetlistPreview
-              ref={previewRef}
-              tracks={pageTracks}
-              metadata={metadata}
-              template={template}
-              backgroundImage={backgroundImage}
-              overlayOpacity={overlayOpacity}
-              rowsPerPage={rowsPerPage}
-              columnCount={columnCount}
-              aspectRatio={aspectRatio}
-              pageIndex={page}
-              pageCount={pageCount}
-              totalTrackCount={displayTracks.length}
-              globalIndexStart={page * tracksPerPage}
-              hiddenTracks={hiddenTracks}
-              onTrackClick={handleTrackClick}
-            />
-          </>
+        {reviewOpen && playlist.matches.length > 0 ? (
+          <PlaylistReview state={playlist} onChange={setPlaylist} tracks={tracks} onClose={() => setReviewOpen(false)} />
         ) : (
-          <div className={styles.empty}>
-            <div className={styles.emptyTitle}>Setlist Maker</div>
-            <div className={styles.emptyHint}>
-              rekordbox txt ファイルをドロップしてセトリ画像を生成
-            </div>
-          </div>
+        <PreviewStage
+          loaded={loaded}
+          dragging={dragging}
+          page={page}
+          pageCount={pageCount}
+          onPageChange={setCurrentPage}
+          sidebarOpen={sidebarOpen}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          image={loaded ? { ...imageProps, slice: slices[page], pageIndex: page, pageCount, substitutes, onTrackClick } : null}
+        />
         )}
       </main>
 
-      {trackMenu && (
-        <div
-          className={styles.trackMenu}
-          style={{ left: trackMenu.x, top: trackMenu.y }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-        >
-          <button className={styles.trackMenuItem} onClick={handleToggleHidden}>
-            {hiddenTracks.has(trackMenu.globalIndex) ? '再表示' : '非表示'}
-          </button>
-          <button className={styles.trackMenuItem} onClick={handleOpenSearch}>
-            ジャケット検索
-          </button>
+      {loaded && (
+        <div className={styles.mobileExport}>
+          {/* Mobile: export button fixed at the bottom (desktop uses the sidebar button) */}
+          <button type="button" className={styles.mobileExportButton} onClick={() => setExportOpen(true)}><Share size={20} />Export</button>
         </div>
       )}
 
-      {searchModal && (() => {
-        const t = displayTracks[searchModal.globalIndex];
-        const q = t ? `${t.artist ?? ''} ${t.title ?? ''}`.trim() : '';
-        return (
-          <ArtworkSearchModal
-            initialQuery={q}
-            onSelect={handleSelectArtwork}
-            onClose={() => setSearchModal(null)}
-          />
-        );
-      })()}
+      {menu && (
+        <TrackMenu
+          x={menu.x}
+          y={menu.y}
+          hidden={hidden.has(menu.index)}
+          onToggleHidden={() => { toggleHidden(menu.index); setMenu(null); }}
+          onSearch={() => { setSearchIndex(menu.index); setMenu(null); }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+
+      {searchIndex !== null && tracks[searchIndex] && (
+        <ArtworkSearchModal
+          track={tracks[searchIndex]}
+          onSelect={(o) => { setOverride(searchIndex, o); setSearchIndex(null); }}
+          onClose={() => setSearchIndex(null)}
+        />
+      )}
+
+      {exportOpen && loaded && (
+        <ExportModal
+          slices={slices}
+          imageProps={imageProps}
+          baseName={exportBaseName}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
+
+      {editorTab && loaded && (
+        <StyleEditor
+          tab={editorTab}
+          onTabChange={setEditorTab}
+          initial={{ background, themeId, presetId }}
+          image={{ ...imageProps, slice: slices[page], pageIndex: page, pageCount }}
+          onApply={(d) => {
+            setBackground(d.background);
+            setThemeId(d.themeId);
+            if (d.presetId !== presetId) { setPresetId(d.presetId); setCurrentPage(0); }
+            setEditorTab(null);
+          }}
+          onCancel={() => setEditorTab(null)}
+        />
+      )}
+
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
   );
 }

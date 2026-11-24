@@ -1,171 +1,103 @@
 /**
  * Export matrix cases and local assets (dev only)
  *
- * Renders one combination of sample / aspect ratio / columns / theme / page per URL
- * (`?case=<id>`) so scripts/export-matrix.mjs can capture every combination with the
- * same html2canvas path the app uses. Without `?case`, lists all cases as links.
- *
- * Artwork is generated locally (no network) so captures are deterministic.
+ * One combination of sample / preset / columns / theme / state per URL (`?case=<id>`), so
+ * scripts/export-matrix.mjs can capture every combination with the same path the app uses
+ * (SetlistImage + modern-screenshot). Artwork, the background photo and the QR code are
+ * generated locally (no network) so captures are deterministic.
  */
-import { decodeBuffer, parseSetlist } from '@core/parser.ts';
-import type { AspectRatio, TrackWithArtwork } from '@core/layout.ts';
-import { CANVAS_SIZES } from '@core/layout.ts';
-import { templates } from '../templates/index.ts';
+import { decodeBuffer, parseSetlist } from '../core/parser.ts';
+import type { TrackWithArtwork } from '../types/index.ts';
+import type { PresetId } from '../core/presets.ts';
+import { PRESETS, PRESET_IDS } from '../core/presets.ts';
+import type { ThemeId } from '../themes/index.ts';
+import { THEMES } from '../themes/index.ts';
 
-const sampleUrls = import.meta.glob('../../samples/*.txt', {
-  query: '?url',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-function sampleName(path: string): string {
-  return path.split('/').pop()!.replace(/\.txt$/, '');
-}
-
-const SAMPLES = Object.fromEntries(
-  Object.entries(sampleUrls).map(([path, url]) => [sampleName(path), url]),
-);
+const sampleUrls = import.meta.glob('../../samples/*.txt', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+const SAMPLES = Object.fromEntries(Object.entries(sampleUrls).map(([path, url]) => [path.split('/').pop()!.replace(/\.txt$/, ''), url]));
 
 export interface MatrixCase {
   id: string;
   sample: string;
-  aspect: AspectRatio;
+  preset: PresetId;
   columns: 1 | 2;
-  templateId: string;
-  rowsPerPage: number;
+  theme: ThemeId;
   page: number | 'last';
-  hiddenIndexes: number[];
+  hidden: number[];
   background: boolean;
+  qr: boolean;
 }
 
 function caseId(c: Omit<MatrixCase, 'id'>): string {
-  const parts = [
-    c.sample,
-    c.aspect.replace(':', 'x'),
-    `c${c.columns}`,
-    c.templateId,
-    `r${c.rowsPerPage}`,
-    `p${c.page}`,
-  ];
-  if (c.hiddenIndexes.length > 0) parts.push('hidden');
+  const parts = [c.sample, c.preset.replace(':', 'x'), `c${c.columns}`, c.theme, `p${c.page}`];
+  if (c.hidden.length) parts.push('hidden');
   if (c.background) parts.push('bg');
+  if (c.qr) parts.push('qr');
   return parts.join('__');
-}
-
-/** Columns allowed per aspect ratio (mirrors App.tsx: 2 columns only on 16:9). */
-function columnsFor(aspect: AspectRatio): (1 | 2)[] {
-  return aspect === '16:9' ? [1, 2] : [1];
 }
 
 function buildCases(): MatrixCase[] {
   const list: Omit<MatrixCase, 'id'>[] = [];
-  const aspects = Object.keys(CANVAS_SIZES) as AspectRatio[];
-
-  // Every layout x every theme with the standard sample.
-  for (const aspect of aspects) {
-    for (const columns of columnsFor(aspect)) {
-      for (const t of templates) {
-        list.push({ sample: 'basic-36', aspect, columns, templateId: t.id, rowsPerPage: 18, page: 0, hiddenIndexes: [], background: false });
-      }
+  const base = { hidden: [] as number[], background: false, qr: false, page: 0 as number | 'last' };
+  for (const preset of PRESET_IDS) {
+    for (const columns of PRESETS[preset].columns) {
+      for (const t of THEMES) list.push({ ...base, sample: 'basic-36', preset, columns, theme: t.id });
+      list.push({ ...base, sample: 'edge-cases', preset, columns, theme: 'dark' });
+      list.push({ ...base, sample: 'basic-36', preset, columns, theme: 'light', page: 'last', qr: true });
     }
   }
-
-  // States checked on the default theme only.
-  const base = { templateId: templates[0].id, rowsPerPage: 18, hiddenIndexes: [] as number[], background: false };
-  for (const aspect of aspects) {
-    for (const columns of columnsFor(aspect)) {
-      list.push({ ...base, sample: 'edge-cases', aspect, columns, page: 0 });
-    }
-  }
-  list.push({ ...base, sample: 'basic-36', aspect: '16:9', columns: 2, page: 0, hiddenIndexes: [1, 4, 5] });
-  for (const t of templates) {
-    list.push({ ...base, templateId: t.id, sample: 'basic-36', aspect: '16:9', columns: 2, page: 0, hiddenIndexes: [2], background: true });
-  }
-  list.push({ ...base, sample: 'large-120', aspect: '16:9', columns: 1, page: 'last' });
-  list.push({ ...base, sample: 'basic-36', aspect: '16:9', columns: 1, rowsPerPage: 8, page: 'last' });
-  list.push({ ...base, sample: 'utf16le-10', aspect: '7:8', columns: 1, page: 0 });
-
+  list.push({ ...base, sample: 'basic-36', preset: '16:9', columns: 2, theme: 'dark', hidden: [1, 4, 5] });
+  for (const t of THEMES) list.push({ ...base, sample: 'basic-36', preset: '4:5', columns: 1, theme: t.id, hidden: [2], background: true });
+  list.push({ ...base, sample: 'large-120', preset: '4:5', columns: 1, theme: 'dark', page: 'last' });
+  list.push({ ...base, sample: 'utf16le-10', preset: '1:1', columns: 1, theme: 'warm' });
   return list.map((c) => ({ ...c, id: caseId(c) }));
 }
 
 export const CASES = buildCases();
 
-// --- Deterministic local assets ---
-
 function hash(text: string): number {
   let h = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
   return h >>> 0;
 }
 
-/** Solid-colour square derived from the track name; every 7th track has no artwork. */
-function placeholderArtwork(track: { title?: string; artist?: string }, index: number): string | null {
-  if (index % 7 === 6) return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 120;
-  canvas.height = 120;
-  const ctx = canvas.getContext('2d')!;
+/** Solid-colour square derived from the track name; every 7th track has no artwork, every 11th is a substitute. */
+function placeholderArtwork(track: { title?: string; artist?: string }, index: number): Pick<TrackWithArtwork, 'artworkUrl' | 'artworkMatch'> {
+  if (index % 7 === 6) return { artworkUrl: null, artworkMatch: 'none' };
+  const c = document.createElement('canvas'); c.width = 120; c.height = 120;
+  const ctx = c.getContext('2d')!;
   const h = hash(`${track.artist ?? ''}/${track.title ?? ''}`);
-  ctx.fillStyle = `hsl(${h % 360} 45% 45%)`;
-  ctx.fillRect(0, 0, 120, 120);
-  ctx.fillStyle = `hsl(${(h >> 9) % 360} 45% 65%)`;
-  ctx.fillRect(0, 60, 120, 60);
-  return canvas.toDataURL('image/png');
+  ctx.fillStyle = `hsl(${h % 360} 45% 45%)`; ctx.fillRect(0, 0, 120, 120);
+  ctx.fillStyle = `hsl(${(h >> 9) % 360} 45% 65%)`; ctx.fillRect(0, 60, 120, 60);
+  return { artworkUrl: c.toDataURL('image/png'), artworkMatch: index % 11 === 10 ? 'substitute' : 'exact' };
 }
 
-/** Blocky pattern used as a stand-in for a user background photo. */
-export function placeholderBackground(): string {
-  const canvas = document.createElement('canvas');
-  canvas.width = 320;
-  canvas.height = 180;
-  const ctx = canvas.getContext('2d')!;
-  for (let y = 0; y < 180; y += 20) {
-    for (let x = 0; x < 320; x += 20) {
-      ctx.fillStyle = `hsl(${(x + y) % 360} 40% ${30 + ((x * y) % 40)}%)`;
-      ctx.fillRect(x, y, 20, 20);
-    }
+/** Blocky stand-in for a user background photo (landscape, 1600x1000) */
+export function placeholderBackground(): { src: string; width: number; height: number } {
+  const c = document.createElement('canvas'); c.width = 1600; c.height = 1000;
+  const ctx = c.getContext('2d')!;
+  for (let y = 0; y < 1000; y += 100) for (let x = 0; x < 1600; x += 100) {
+    ctx.fillStyle = `hsl(${(x * 0.2 + y * 0.1) % 360} 50% ${30 + ((x + y) % 40)}%)`; ctx.fillRect(x, y, 100, 100);
   }
-  return canvas.toDataURL('image/png');
+  return { src: c.toDataURL('image/png'), width: 1600, height: 1000 };
 }
 
 export async function loadTracks(sample: string): Promise<TrackWithArtwork[]> {
   const url = SAMPLES[sample];
   if (!url) throw new Error(`unknown sample: ${sample}`);
-  const buffer = await (await fetch(url)).arrayBuffer();
-  const { tracks } = parseSetlist(decodeBuffer(buffer));
-  return tracks.map((t, i) => ({ ...t, artworkUrl: placeholderArtwork(t, i) }));
+  const { tracks } = parseSetlist(decodeBuffer(await (await fetch(url)).arrayBuffer()));
+  return tracks.map((t, i) => ({ ...t, ...placeholderArtwork(t, i) }));
 }
 
 export async function waitForImages(root: HTMLElement): Promise<void> {
-  await Promise.all(
-    Array.from(root.querySelectorAll('img')).map((img) =>
-      img.complete ? Promise.resolve() : new Promise<void>((r) => { img.onload = img.onerror = () => r(); }),
-    ),
-  );
+  await Promise.all(Array.from(root.querySelectorAll('img')).map((img) =>
+    img.complete ? Promise.resolve() : new Promise<void>((r) => { img.onload = img.onerror = () => r(); })));
 }
 
 export async function blobToBase64(blob: Blob): Promise<string> {
-  const dataUrl = await new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.readAsDataURL(blob);
-  });
+  const dataUrl = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(blob); });
   return dataUrl.slice(dataUrl.indexOf(',') + 1);
 }
 
-export interface MatrixApi {
-  cases: string[];
-  ready: boolean;
-  error: string | null;
-  capture: () => Promise<string>;
-}
-
-declare global {
-  interface Window {
-    __matrix: MatrixApi;
-  }
-}
-
+export interface MatrixApi { cases: string[]; ready: boolean; error: string | null; capture: () => Promise<string> }
+declare global { interface Window { __matrix: MatrixApi } }

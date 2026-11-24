@@ -1,0 +1,217 @@
+.sidebar {
+  width: var(--ui-size-sidebar);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-5);
+  border-right: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-panel);
+  overflow-y: auto;
+}
+
+.closed {
+  display: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin-left: calc(var(--ui-space-2) * -1);
+}
+
+.brand {
+  font-size: var(--ui-font-size-2);
+  font-weight: var(--ui-font-bold);
+  letter-spacing: 0.02em;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-5);
+  border: 1.5px dashed var(--ui-border-control);
+  border-radius: var(--ui-radius-4);
+  text-align: center;
+}
+
+.heroActive {
+  border: 2px solid var(--ui-accent-solid);
+  background: var(--ui-bg-control);
+}
+
+.heroIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ui-radius-4);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-secondary);
+}
+
+.heroActive .heroIcon {
+  background: var(--ui-bg-selected);
+}
+
+.heroLabel {
+  font-size: var(--ui-font-size-3);
+  line-height: var(--ui-line-height-3);
+  font-weight: var(--ui-font-medium);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+}
+
+.fileName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-secondary);
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.progressHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--ui-font-size-1);
+  line-height: var(--ui-line-height-1);
+  color: var(--ui-text-secondary);
+}
+
+.missing {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+}
+
+.missingSquare {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--ui-bg-control);
+  flex-shrink: 0;
+}
+
+.missingText {
+  flex: 1;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  width: 100%;
+  padding: var(--ui-space-2);
+  border-radius: var(--ui-radius-3);
+  background: var(--ui-bg-control);
+  text-align: left;
+}
+
+.card:hover {
+  background: var(--ui-bg-control-hover);
+}
+
+.cardCompact {
+  height: 40px;
+  padding: 0 var(--ui-space-3);
+}
+
+.thumb {
+  border-radius: 2px;
+}
+
+.cardLabel {
+  flex: 1;
+  font-weight: var(--ui-font-medium);
+}
+
+.cardChevron {
+  color: var(--ui-text-secondary);
+}
+
+.review {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  color: var(--ui-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewSquare {
+  width: 12px;
+  height: 12px;
+  border: 1.5px dashed var(--ui-text-secondary);
+  border-radius: 2px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+}
+
+.groupLabel {
+  font-size: var(--ui-font-size-1);
+  line-height: var(--ui-line-height-1);
+  color: var(--ui-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .sidebar,
+  .closed {
+    display: flex;
+    order: 2;
+    width: 100%;
+    flex: 1;
+    border-right: none;
+    border-top: 1px solid var(--ui-border-subtle);
+    padding: var(--ui-space-3) var(--ui-space-4);
+  }
+
+  .toggle {
+    display: none;
+  }
+
+  .header {
+    margin-left: 0;
+    min-height: 32px;
+  }
+
+  /* the fixed export button at the bottom of the screen replaces it */
+  .export {
+    display: none;
+  }
+
+  .cardCompact {
+    height: 48px;
+  }
+
+  .cardLabel {
+    font-size: var(--ui-font-size-3);
+  }
+}

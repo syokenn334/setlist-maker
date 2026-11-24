@@ -1,14 +1,15 @@
 /**
  * Export matrix (dev only)
  *
- * Renders one combination of sample / aspect ratio / columns / theme / page per URL
+ * Renders one combination of sample / preset / columns / theme / state per URL
  * (`?case=<id>`) so scripts/export-matrix.mjs can capture every combination with the
- * same html2canvas path the app uses. Without `?case`, lists all cases as links.
+ * same path the app uses (SetlistImage + modern-screenshot). Without `?case`, lists all cases as links.
  *
  * Artwork is generated locally (no network) so captures are deterministic.
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '../styles/fonts.ts';
 import '../styles/global.css';
 import { CASES } from './matrixCases.ts';
 import { Matrix } from './MatrixApp.tsx';

@@ -1,0 +1,127 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin-left: calc(var(--ui-space-2) * -1);
+}
+
+.title {
+  font-weight: var(--ui-font-bold);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  border-radius: var(--ui-radius-3);
+}
+
+.item:hover {
+  background: var(--ui-bg-control);
+}
+
+.track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2);
+  text-align: left;
+}
+
+.number {
+  width: 2.5ch;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.art {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--ui-radius-2);
+  background: var(--ui-bg-control);
+  overflow: hidden;
+}
+
+.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.substitute {
+  outline: 1.5px dashed var(--ui-text-primary);
+  outline-offset: 1px;
+}
+
+.pending {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% { background: var(--ui-bg-selected); }
+}
+
+.info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.trackTitle,
+.artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trackTitle {
+  font-weight: var(--ui-font-medium);
+}
+
+.artist {
+  font-size: var(--ui-font-size-1);
+  line-height: var(--ui-line-height-1);
+  color: var(--ui-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .art {
+    width: 44px;
+    height: 44px;
+  }
+
+  .trackTitle {
+    font-size: var(--ui-font-size-3);
+  }
+
+  .artist {
+    font-size: var(--ui-font-size-2);
+  }
+}

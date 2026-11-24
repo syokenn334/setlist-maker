@@ -1,4 +1,5 @@
-/* Reset */
+@import './tokens.css';
+
 *,
 *::before,
 *::after {
@@ -7,33 +8,34 @@
   box-sizing: border-box;
 }
 
-:root {
-  --sidebar-width: 320px;
-  --bg-app: #111;
-  --bg-sidebar: #1a1a1a;
-  --text-primary: #eee;
-  --text-secondary: #aaa;
-  --text-muted: #666;
-  --accent: #e94560;
-  --border: #333;
-}
-
 html, body, #root {
   height: 100%;
-  background: var(--bg-app);
-  color: var(--text-primary);
-  font-family: 'Inter', 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--ui-bg-app);
+  color: var(--ui-text-primary);
+  font-family: var(--ui-font-family);
+  font-size: var(--ui-font-size-2);
+  line-height: var(--ui-line-height-2);
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   overflow: hidden;
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
 }
 
-input {
-  font-family: inherit;
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ui-accent-focus);
+  outline-offset: 2px;
 }
