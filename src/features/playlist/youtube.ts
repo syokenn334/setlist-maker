@@ -157,7 +157,7 @@ export function judge(track: { artist?: string; title?: string }, c: VideoCandid
 export async function createPlaylist(title: string, privacy: 'unlisted' | 'public', token: string, apiKey: string): Promise<string> {
   const r = await call<{ id: string }>('playlists?part=snippet,status', token, apiKey, {
     method: 'POST',
-    body: JSON.stringify({ snippet: { title, description: 'Created with Setlist Maker' }, status: { privacyStatus: privacy } }),
+    body: JSON.stringify({ snippet: { title, description: 'Created with SETLIST MAKER' }, status: { privacyStatus: privacy } }),
   });
   return r.id;
 }
