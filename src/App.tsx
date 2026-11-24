@@ -110,18 +110,26 @@ export default function App() {
       fetcher.abort();
       setDropError(null);
       setFileName(file.name);
-      setMetadata((prev) => ({ ...prev, eventName: file.name.replace(/\.\w+$/, '') }));
+      const eventName = file.name.replace(/\.\w+$/, '');
+      setMetadata((prev) => ({ ...prev, eventName }));
       setHidden(new Set());
       setOverrides(new Map());
       setCurrentPage(0);
       setSidebarView('settings');
-      setPlaylist((p) => ({ ...p, createdUrl: null, matches: [] }));
+      // A new setlist starts a new playlist: keep the sign-in, drop the previous search / creation
+      setPlaylist((p) => ({
+        ...p,
+        step: p.accessToken ? 'signedIn' : 'credentials',
+        name: `${eventName} ${metadata.date}`.trim(),
+        progress: 0, matches: [], createdUrl: null, error: null,
+      }));
+      setReviewOpen(false);
       setPhase('loaded');
       fetcher.start(result.tracks);
     } catch {
       if (phase === 'idle') setDropError('ファイルを読み込めませんでした'); else setToast('ファイルを読み込めませんでした');
     }
-  }, [fetcher, phase]);
+  }, [fetcher, phase, metadata.date]);
 
   const onDragOver = (e: DragEvent) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragging(true); } };
   const onDragLeave = (e: DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); };

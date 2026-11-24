@@ -17,6 +17,11 @@
   display: none;
 }
 
+/* scrollbar 4px + 4px margin on each side */
+.gutter {
+  padding-right: 12px;
+}
+
 /* Radix Themes ScrollArea size 1: 4px wide, 4px margin, gray-a3 track, gray-a8 thumb */
 .scrollbar {
   position: absolute;

@@ -2,6 +2,7 @@
  * Vertical scroll area with a thin overlay scrollbar, after Radix Themes ScrollArea (size 1, type "hover"):
  * 4px wide, 4px from the edge, gray-a3 track and gray-a8 thumb. The native scrollbar is hidden;
  * wheel, touch and keyboard scrolling stay native. The thumb can be dragged.
+ * `gutter` reserves room for the scrollbar while it is shown, for content that reaches the right edge.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
@@ -9,7 +10,7 @@ import styles from './ScrollArea.module.css';
 
 const MIN_THUMB = 16; // Radix Themes: min-height var(--space-4)
 
-export function ScrollArea({ className, contentClassName, children }: { className?: string; contentClassName?: string; children: ReactNode }) {
+export function ScrollArea({ className, contentClassName, gutter = false, children }: { className?: string; contentClassName?: string; gutter?: boolean; children: ReactNode }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<{ top: number; height: number } | null>(null);
@@ -64,7 +65,7 @@ export function ScrollArea({ className, contentClassName, children }: { classNam
   return (
     <div className={`${styles.root} ${className ?? ''}`}>
       <div ref={viewport} className={styles.viewport} onScroll={() => { update(); flash(); }}>
-        <div ref={content} className={contentClassName}>{children}</div>
+        <div ref={content} className={`${contentClassName ?? ''} ${gutter && thumb ? styles.gutter : ''}`}>{children}</div>
       </div>
       {thumb && (
         <div className={`${styles.scrollbar} ${active ? styles.visible : ''}`} aria-hidden="true">
