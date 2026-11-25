@@ -5,7 +5,7 @@ import { PRESET_IDS, PRESETS } from '../core/presets.ts';
 import type { SetlistImageProps } from '../image/SetlistImage.tsx';
 import { MAX_ROWS, MIN_ROWS } from '../core/imageLayout.ts';
 import { SetlistImage } from '../image/SetlistImage.tsx';
-import { Button, ErrorText, IconButton, Progress, Section, Segmented, Slider, Spinner, TextInput } from '../ui/controls.tsx';
+import { Button, Checkbox, ErrorText, IconButton, Progress, Section, Segmented, Slider, Spinner, TextInput } from '../ui/controls.tsx';
 import { ChevronRight, FileText, PanelLeftClose, RotateCw, Share } from '../ui/icons.tsx';
 import { Scaled } from './Scaled.tsx';
 import { ScrollArea } from '../ui/ScrollArea.tsx';
@@ -30,6 +30,8 @@ interface SidebarProps {
   fileName: string | null;
   fetch: FetchStatus;
   onExport: () => void;
+  showArtwork: boolean;
+  onShowArtworkChange: (v: boolean) => void;
   onOpenEditor: () => void;
   styleThumb: SetlistImageProps | null;
   reviewCount: number;
@@ -76,6 +78,7 @@ export function Sidebar(p: SidebarProps) {
           onBack={() => p.onViewChange('settings')}
           onToggleHidden={p.onToggleHidden}
           onSearch={p.onSearchArtwork}
+          showArtwork={p.showArtwork}
         />
         </ScrollArea>
       </aside>
@@ -147,6 +150,7 @@ export function Sidebar(p: SidebarProps) {
           </Section>
 
           <Section title="レイアウト" open={open.layout} onToggle={() => setOpen((o) => ({ ...o, layout: !o.layout }))}>
+            <Checkbox label="アートワークを表示" checked={p.showArtwork} onChange={p.onShowArtworkChange} />
             <div className={styles.group}>
               <span className={styles.groupLabel}>サイズ</span>
               <Segmented label="サイズ" value={p.presetId} onChange={p.onPresetChange} options={PRESET_IDS.map((id) => ({ value: id, label: id }))} />

@@ -24,6 +24,8 @@ export interface SetlistImageProps {
   rowsLimit: number | null;
   /** 行ごとの枠 (曲名の枠) */
   rowFrame: boolean;
+  /** ジャケットの列を出す。false のときは列ごとなくし、曲名を左に詰める */
+  showArtwork: boolean;
   theme: ImageTheme;
   metadata: SetlistMetadata;
   /** 全曲 (ページの曲は slice で切り出す) */
@@ -40,7 +42,7 @@ export interface SetlistImageProps {
 }
 
 export function SetlistImage(props: SetlistImageProps) {
-  const { preset, columns, rowsLimit, rowFrame, theme, metadata, tracks, slice, pageIndex, pageCount, hidden, background, qrDataUrl, substitutes, onTrackClick } = props;
+  const { preset, columns, rowsLimit, rowFrame, showArtwork, theme, metadata, tracks, slice, pageIndex, pageCount, hidden, background, qrDataUrl, substitutes, onTrackClick } = props;
   const g = computeGeometry(preset, columns, rowsLimit);
   const maxNo = tracks.reduce((m, t, i) => Math.max(m, t.number ?? i + 1), 0);
   const numberDigits = Math.max(2, String(maxNo).length);
@@ -109,9 +111,11 @@ export function SetlistImage(props: SetlistImageProps) {
               onClick={onTrackClick ? (e) => onTrackClick(index, e) : undefined}
             >
               <span className={styles.number} style={{ width: `${numberDigits}ch`, fontSize: g.subSize }}>{track.number ?? index + 1}</span>
-              <span className={`${styles.artwork} ${isSub && !isHidden ? styles.substitute : ''}`} style={{ width: g.artwork, height: g.artwork }}>
-                {!isHidden && track.artworkUrl && <img src={track.artworkUrl} alt="" crossOrigin="anonymous" />}
-              </span>
+              {showArtwork && (
+                <span className={`${styles.artwork} ${isSub && !isHidden ? styles.substitute : ''}`} style={{ width: g.artwork, height: g.artwork }}>
+                  {!isHidden && track.artworkUrl && <img src={track.artworkUrl} alt="" crossOrigin="anonymous" />}
+                </span>
+              )}
               {isHidden ? (
                 <>
                   <span className={styles.info}>

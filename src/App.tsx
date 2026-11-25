@@ -18,6 +18,7 @@ import { PreviewStage } from './features/PreviewStage.tsx';
 import { ArtworkSearchModal } from './features/ArtworkSearchModal.tsx';
 import { ExportModal } from './features/ExportModal.tsx';
 import { StyleEditor } from './features/StyleEditor.tsx';
+import { ArtworkNoticeModal } from './features/ArtworkNoticeModal.tsx';
 import type { EditorTab } from './features/StyleEditor.tsx';
 import { TrackMenu } from './features/TrackMenu.tsx';
 import { PlaylistReview } from './features/playlist/PlaylistReview.tsx';
@@ -51,6 +52,9 @@ export default function App() {
   const [columnsPref, setColumnsPref] = useState<1 | 2>(2);
   const [rowsLimit, setRowsLimit] = useState<number | null>(null);
   const [rowFrame, setRowFrame] = useState(true);
+  // Off by default: artwork is fetched from iTunes only after the user accepts the notice
+  const [showArtwork, setShowArtwork] = useState(false);
+  const [artworkNotice, setArtworkNotice] = useState(false);
   const [themeId, setThemeId] = useState<ThemeId>('dark');
   const [background, setBackground] = useState<BackgroundSettings>(DEFAULT_BACKGROUND);
   const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set());
@@ -92,8 +96,8 @@ export default function App() {
   const pageCount = slices.length;
   const page = Math.min(currentPage, pageCount - 1);
 
-  const substitutes = useMemo(() => new Set(tracks.flatMap((t, i) => (t.artworkMatch === 'substitute' ? [i] : []))), [tracks]);
-  const missingCount = tracks.filter((t) => t.artworkMatch === 'none').length;
+  const substitutes = useMemo(() => new Set(showArtwork ? tracks.flatMap((t, i) => (t.artworkMatch === 'substitute' ? [i] : [])) : []), [tracks, showArtwork]);
+  const missingCount = showArtwork ? tracks.filter((t) => t.artworkMatch === 'none').length : 0;
 
   const handleFile = useCallback(async (file: File) => {
     if (!isTxt(file.name)) {
@@ -124,11 +128,11 @@ export default function App() {
       }));
       setReviewOpen(false);
       setPhase('loaded');
-      fetcher.start(result.tracks);
+      fetcher.start(result.tracks, showArtwork);
     } catch {
       if (phase === 'idle') setDropError('ファイルを読み込めませんでした'); else setToast('ファイルを読み込めませんでした');
     }
-  }, [fetcher, phase]);
+  }, [fetcher, phase, showArtwork]);
 
   const onDragOver = (e: DragEvent) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragging(true); } };
   const onDragLeave = (e: DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); };
@@ -156,7 +160,7 @@ export default function App() {
   const loaded = phase === 'loaded' && tracks.length > 0;
 
   const imageProps = {
-    preset, columns, rowsLimit, rowFrame, theme, metadata, tracks, hidden, background, qrDataUrl,
+    preset, columns, rowsLimit, rowFrame, showArtwork, theme, metadata, tracks, hidden, background, qrDataUrl,
   };
 
   return (
@@ -176,7 +180,13 @@ export default function App() {
         dropError={dropError}
         onFile={(f) => void handleFile(f)}
         fileName={fileName}
-        fetch={{ progress: fetcher.progress, total: fetcher.total, isFetching: fetcher.isFetching, missing: missingCount, onRetry: fetcher.retryMissing }}
+        fetch={{ progress: fetcher.progress, total: fetcher.total, isFetching: showArtwork && fetcher.isFetching, missing: missingCount, onRetry: fetcher.retryMissing }}
+        showArtwork={showArtwork}
+        onShowArtworkChange={(v) => {
+          if (v) { setArtworkNotice(true); return; }
+          setShowArtwork(false);
+          fetcher.abort();
+        }}
         onExport={() => setExportOpen(true)}
         onOpenEditor={() => setEditorTab('bg')}
         styleThumb={loaded ? { ...imageProps, slice: slices[0], pageIndex: 0, pageCount } : null}
@@ -228,6 +238,7 @@ export default function App() {
           x={menu.x}
           y={menu.y}
           hidden={hidden.has(menu.index)}
+          canSearch={showArtwork}
           onToggleHidden={() => { toggleHidden(menu.index); setMenu(null); }}
           onSearch={() => { setSearchIndex(menu.index); setMenu(null); }}
           onClose={() => setMenu(null)}
@@ -265,6 +276,13 @@ export default function App() {
             setEditorTab(null);
           }}
           onCancel={() => setEditorTab(null)}
+        />
+      )}
+
+      {artworkNotice && (
+        <ArtworkNoticeModal
+          onConfirm={() => { setArtworkNotice(false); setShowArtwork(true); fetcher.fetchPending(); }}
+          onCancel={() => setArtworkNotice(false)}
         />
       )}
 

@@ -14,7 +14,9 @@ const EMPTY: ArtworkFetcherState = { tracks: [], progress: 0, total: 0, isFetchi
 
 /**
  * Fetches artwork for every track in order (requests are throttled in core/artwork.ts).
- * `retry` re-runs only the tracks whose artwork was not found.
+ * `start(parsed, false)` only loads the tracks; `fetchPending` fetches the tracks not fetched yet
+ * (used when artwork display is turned on later, or resumed after `abort`).
+ * `retryMissing` re-runs only the tracks whose artwork was not found.
  */
 export function useArtworkFetcher() {
   const [state, setState] = useState<ArtworkFetcherState>(EMPTY);
@@ -45,9 +47,19 @@ export function useArtworkFetcher() {
     })();
   }, []);
 
-  const start = useCallback((parsed: Track[]) => {
+  const start = useCallback((parsed: Track[], fetchNow: boolean) => {
     const initial: TrackWithArtwork[] = parsed.map((t) => ({ ...t, artworkUrl: null, artworkMatch: 'pending' }));
-    run(initial, initial.map((_, i) => i));
+    if (fetchNow) { run(initial, initial.map((_, i) => i)); return; }
+    abortRef.current?.abort();
+    setState({ tracks: initial, progress: 0, total: 0, isFetching: false });
+  }, [run]);
+
+  const fetchPending = useCallback(() => {
+    setState((prev) => {
+      const pending = prev.tracks.map((t, i) => (t.artworkMatch === 'pending' ? i : -1)).filter((i) => i >= 0);
+      if (pending.length) queueMicrotask(() => run(prev.tracks, pending));
+      return prev;
+    });
   }, [run]);
 
   const retryMissing = useCallback(() => {
@@ -65,5 +77,5 @@ export function useArtworkFetcher() {
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  return { ...state, start, retryMissing, abort };
+  return { ...state, start, fetchPending, retryMissing, abort };
 }

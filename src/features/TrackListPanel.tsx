@@ -6,12 +6,14 @@ import styles from './TrackListPanel.module.css';
 
 type Filter = 'all' | 'substitute' | 'none' | 'hidden';
 
-export function TrackListPanel({ tracks, hidden, onBack, onToggleHidden, onSearch }: {
+export function TrackListPanel({ tracks, hidden, onBack, onToggleHidden, onSearch, showArtwork }: {
   tracks: TrackWithArtwork[];
   hidden: ReadonlySet<number>;
   onBack: () => void;
   onToggleHidden: (index: number) => void;
   onSearch: (index: number) => void;
+  /** Off: no artwork column, no artwork filters, rows are not buttons */
+  showArtwork: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>('all');
   const visible = tracks
@@ -32,23 +34,33 @@ export function TrackListPanel({ tracks, hidden, onBack, onToggleHidden, onSearc
         <span className={styles.title}>曲一覧</span>
       </div>
       <div className={styles.chips} role="group" aria-label="絞り込み">
-        {([['all', 'すべて'], ['substitute', '代用'], ['none', 'なし'], ['hidden', '非表示']] as [Filter, string][]).map(([f, label]) => (
+        {(showArtwork ? [['all', 'すべて'], ['substitute', '代用'], ['none', 'なし'], ['hidden', '非表示']] as [Filter, string][] : [['all', 'すべて'], ['hidden', '非表示']] as [Filter, string][]).map(([f, label]) => (
           <Chip key={f} selected={filter === f} onClick={() => setFilter(f)}>{label}{f !== 'all' && count(f) > 0 ? ` ${count(f)}` : ''}</Chip>
         ))}
       </div>
       <ul className={styles.list}>
         {visible.map(({ t, i }) => (
           <li key={i} className={styles.item}>
-            <button type="button" className={styles.track} onClick={() => onSearch(i)} aria-label={`${t.title ?? ''} のジャケットを差し替える`}>
-              <span className={styles.number}>{t.number ?? i + 1}</span>
-              <span className={`${styles.art} ${t.artworkMatch === 'substitute' ? styles.substitute : ''} ${t.artworkMatch === 'pending' ? styles.pending : ''}`}>
-                {t.artworkUrl && <img src={t.artworkUrl} alt="" />}
-              </span>
-              <span className={styles.info}>
-                <span className={styles.trackTitle}>{t.title ?? 'Unknown'}</span>
-                <span className={styles.artist}>{t.artist ?? ''}</span>
-              </span>
-            </button>
+            {showArtwork ? (
+              <button type="button" className={styles.track} onClick={() => onSearch(i)} aria-label={`${t.title ?? ''} のジャケットを差し替える`}>
+                <span className={styles.number}>{t.number ?? i + 1}</span>
+                <span className={`${styles.art} ${t.artworkMatch === 'substitute' ? styles.substitute : ''} ${t.artworkMatch === 'pending' ? styles.pending : ''}`}>
+                  {t.artworkUrl && <img src={t.artworkUrl} alt="" />}
+                </span>
+                <span className={styles.info}>
+                  <span className={styles.trackTitle}>{t.title ?? 'Unknown'}</span>
+                  <span className={styles.artist}>{t.artist ?? ''}</span>
+                </span>
+              </button>
+            ) : (
+              <div className={styles.track}>
+                <span className={styles.number}>{t.number ?? i + 1}</span>
+                <span className={styles.info}>
+                  <span className={styles.trackTitle}>{t.title ?? 'Unknown'}</span>
+                  <span className={styles.artist}>{t.artist ?? ''}</span>
+                </span>
+              </div>
+            )}
             <IconButton label={hidden.has(i) ? '表示する' : '非表示にする'} onClick={() => onToggleHidden(i)} aria-pressed={hidden.has(i)}>
               {hidden.has(i) ? <EyeOff /> : <Eye />}
             </IconButton>

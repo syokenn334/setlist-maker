@@ -1,0 +1,13 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  color: var(--ui-text-secondary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space-2);
+  margin-top: var(--ui-space-5);
+}

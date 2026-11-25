@@ -451,3 +451,37 @@
     animation-duration: 2400ms;
   }
 }
+
+/* Radix Themes Checkbox (size 2, variant surface): 16px, gray-a7 inset line, accent when checked */
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-font-size-2);
+  cursor: pointer;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.25);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  color: var(--ui-text-on-accent);
+}
+
+.checkboxOn {
+  background: var(--ui-accent-solid);
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  /* 44pt touch target around the 16px box */
+  .checkboxRow {
+    min-height: var(--ui-size-touch);
+  }
+}

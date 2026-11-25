@@ -67,6 +67,7 @@ function CaseView({ c }: { c: MatrixCase }) {
         columns={c.columns}
         rowsLimit={c.rows}
         rowFrame={c.rowFrame}
+        showArtwork={c.artwork}
         theme={theme}
         metadata={{ eventName: 'Sample Event', djName: 'DJ Sample', date: '2026.11.24' }}
         tracks={tracks}

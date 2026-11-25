@@ -4,7 +4,7 @@
 import { useEffect, useId } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ExternalLink, X } from './icons.tsx';
+import { Check, ExternalLink, X } from './icons.tsx';
 import styles from './controls.module.css';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
@@ -192,5 +192,17 @@ export function Spinner({ size = 16, label }: { size?: number; label?: string })
     <span className={styles.spinner} style={{ width: size, height: size }} role={label ? 'status' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
       {Array.from({ length: 8 }, (_, i) => <span key={i} className={styles.spinnerLeaf} style={{ transform: `rotate(${i * 45}deg)`, animationDelay: `${((i - 8) / 8) * 800}ms` }} />)}
     </span>
+  );
+}
+
+/** Radix Themes Checkbox (size 2, variant surface) with its label */
+export function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className={styles.checkboxRow}>
+      <button type="button" role="checkbox" aria-checked={checked} className={`${styles.checkbox} ${checked ? styles.checkboxOn : ''}`} onClick={() => onChange(!checked)}>
+        {checked && <Check size={12} strokeWidth={3} />}
+      </button>
+      <span>{label}</span>
+    </label>
   );
 }

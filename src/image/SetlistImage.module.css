@@ -6,9 +6,6 @@
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   color: var(--img-text-primary);
   -webkit-font-smoothing: antialiased;
-  /* 数字は等幅 (1 文字ごとの幅をそろえる) */
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1;
 }
 
 .background {
@@ -153,25 +150,15 @@
   margin-left: 0.5em;
 }
 
+/* Bars that stand in for a hidden track. Text colour at low opacity so they stay visible on the row frame */
 .redacted {
   display: block;
   flex-shrink: 0;
   border-radius: 2px;
-  background: var(--img-surface);
+  background: color-mix(in srgb, var(--img-text-primary) 14%, transparent);
 }
 
-.info .redacted + .time {
-  flex-shrink: 0;
-  text-align: right;
-  color: var(--img-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.timeGap {
-  margin-left: 0.5em;
-}
-
-.redacted {
+.info .redacted + .redacted {
   margin-top: 6px;
 }
 
