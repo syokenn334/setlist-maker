@@ -84,7 +84,7 @@
 
 .number {
   flex-shrink: 0;
-  text-align: right;
+  text-align: center;
   color: var(--img-text-secondary);
   font-variant-numeric: tabular-nums;
 }

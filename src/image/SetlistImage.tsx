@@ -110,7 +110,8 @@ export function SetlistImage(props: SetlistImageProps) {
               style={{ left: x - ROW_FRAME_OUTSET, top: y, width: g.columnWidth + ROW_FRAME_OUTSET * 2, height: g.band, paddingInline: ROW_FRAME_OUTSET }}
               onClick={onTrackClick ? (e) => onTrackClick(index, e) : undefined}
             >
-              <span className={styles.number} style={{ width: `${numberDigits}ch`, fontSize: g.subSize }}>{track.number ?? index + 1}</span>
+              {/* Centred in its column; frame inset + 0.5ch on the left, row gap + 0.5ch (4px more) on the right */}
+              <span className={styles.number} style={{ width: `${numberDigits}ch`, marginInline: '0.5ch', fontSize: g.subSize }}>{track.number ?? index + 1}</span>
               {showArtwork && (
                 <span className={`${styles.artwork} ${isSub && !isHidden ? styles.substitute : ''}`} style={{ width: g.artwork, height: g.artwork }}>
                   {!isHidden && track.artworkUrl && <img src={track.artworkUrl} alt="" crossOrigin="anonymous" />}

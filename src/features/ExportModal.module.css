@@ -76,14 +76,14 @@
 .shareLink {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space-3);
+  gap: var(--ui-space-2);
   margin-top: var(--ui-space-4);
   padding-top: var(--ui-space-4);
   border-top: 1px solid var(--ui-border-subtle);
 }
 
 .shareLabel {
+  margin-right: auto;
   font-size: var(--ui-font-size-2);
   color: var(--ui-text-secondary);
 }

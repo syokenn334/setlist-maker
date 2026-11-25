@@ -270,6 +270,8 @@ export default function App() {
           imageProps={imageProps}
           baseName={exportBaseName}
           shareUrl={shareUrl}
+          // With artwork on, the link carries iTunes IDs: wait until every track has been looked up
+          shareReady={!showArtwork || !tracks.some((t) => t.artworkMatch === 'pending')}
           onClose={() => setExportOpen(false)}
         />
       )}

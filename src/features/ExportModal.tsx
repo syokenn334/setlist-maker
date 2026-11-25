@@ -4,7 +4,7 @@ import type { SetlistImageProps } from '../image/SetlistImage.tsx';
 import { SetlistImage } from '../image/SetlistImage.tsx';
 import { canShareFiles, captureImage, downloadBlob, extensionOf, fitFileSize, safeFileName, shareFiles, zipBlobs } from '../core/exportImage.ts';
 import { MAX_IMAGES_PER_POST } from '../core/presets.ts';
-import { Button, ErrorText, Modal, Progress, Segmented } from '../ui/controls.tsx';
+import { Button, ErrorText, Modal, Progress, Segmented, Spinner } from '../ui/controls.tsx';
 import { Check, Link, Share } from '../ui/icons.tsx';
 import { Scaled } from './Scaled.tsx';
 import styles from './ExportModal.module.css';
@@ -15,7 +15,13 @@ type Step = { kind: 'select' } | { kind: 'exporting'; done: number } | { kind: '
 
 const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
 
-export function ExportModal({ slices, imageProps, baseName, shareUrl, onClose }: { slices: PageSlice[]; imageProps: ImageBase; baseName: string; shareUrl: string; onClose: () => void }) {
+export function ExportModal({ slices, imageProps, baseName, shareUrl, shareReady, onClose }: { slices: PageSlice[]; imageProps: ImageBase; baseName: string; shareUrl: string; shareReady: boolean; onClose: () => void }) {
+  // X post: 【event】 / date name / (blank) / URL, via X's web intent (opens the composer, nothing is sent from here)
+  const postToX = () => {
+    const { eventName, date, djName } = imageProps.metadata;
+    const text = [`【${eventName || 'Setlist'}】`, [date, djName].filter(Boolean).join(' '), '', shareUrl].join('\n');
+    window.open(`https://x.com/intent/tweet?${new URLSearchParams({ text })}`, '_blank', 'noopener,noreferrer');
+  };
   const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(shareUrl); setCopied('ok'); } catch { setCopied('failed'); }
@@ -90,7 +96,11 @@ export function ExportModal({ slices, imageProps, baseName, shareUrl, onClose }:
       {step.kind === 'select' && (
         <div className={styles.shareLink}>
           <span className={styles.shareLabel}>共有ページ</span>
-          <Button variant="ghost" onClick={() => void copyLink()}>{copied === 'ok' ? <Check /> : <Link />}{copied === 'ok' ? 'コピーしました' : 'リンクをコピー'}</Button>
+          <Button variant="ghost" disabled={!shareReady} onClick={() => void copyLink()}>
+            {!shareReady ? <Spinner /> : copied === 'ok' ? <Check /> : <Link />}
+            {!shareReady ? 'アートワーク取得中' : copied === 'ok' ? 'コピーしました' : 'リンクをコピー'}
+          </Button>
+          <Button variant="ghost" disabled={!shareReady} onClick={postToX}>X に投稿</Button>
         </div>
       )}
       {copied === 'failed' && <input className={styles.shareUrl} readOnly value={shareUrl} aria-label="共有ページのリンク" onFocus={(e) => e.currentTarget.select()} />}
