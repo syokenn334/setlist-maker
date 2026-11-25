@@ -51,7 +51,7 @@ export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackW
           const used = r.url === track.artworkUrl;
           return (
             <li key={`${r.url}-${i}`}>
-              <button type="button" className={`${styles.result} ${i === 0 && r.match === 'exact' ? styles.best : ''}`} onClick={() => onSelect({ url: r.url, match: 'exact' })}>
+              <button type="button" className={`${styles.result} ${i === 0 && r.match === 'exact' ? styles.best : ''}`} onClick={() => onSelect({ url: r.url, match: 'exact', trackId: r.trackId })}>
                 <span className={styles.thumb}><img src={r.url} alt="" /></span>
                 <span className={styles.meta}><span className={styles.title}>{r.title}</span><span className={styles.sub}>{r.artist} ・ {r.album}</span></span>
                 {used && <span className={styles.used} aria-label="使用中"><Check size={12} /></span>}
@@ -61,7 +61,7 @@ export function ArtworkSearchModal({ track, onSelect, onClose }: { track: TrackW
         })}
       </ul>
       </ScrollArea>
-      <Button variant="ghost" block onClick={() => onSelect({ url: null, match: 'none' })}>ジャケットなし</Button>
+      <Button variant="ghost" block onClick={() => onSelect({ url: null, match: 'none', trackId: null })}>ジャケットなし</Button>
     </Modal>
   );
 }

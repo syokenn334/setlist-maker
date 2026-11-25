@@ -15,6 +15,8 @@ export type ArtworkMatch = 'exact' | 'substitute' | 'none' | 'pending';
 export interface TrackWithArtwork extends Track {
   artworkUrl: string | null;
   artworkMatch: ArtworkMatch;
+  /** iTunes の曲 ID (アートワークを取得した曲) */
+  itunesTrackId?: number | null;
 }
 
 export interface SetlistMetadata {

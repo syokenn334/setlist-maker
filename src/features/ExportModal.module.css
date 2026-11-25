@@ -71,3 +71,31 @@
   top: 0;
   pointer-events: none;
 }
+
+/* Link to the shared web page (data in the URL fragment) */
+.shareLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  margin-top: var(--ui-space-4);
+  padding-top: var(--ui-space-4);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+.shareLabel {
+  font-size: var(--ui-font-size-2);
+  color: var(--ui-text-secondary);
+}
+
+.shareUrl {
+  width: 100%;
+  margin-top: var(--ui-space-2);
+  height: var(--ui-size-control);
+  padding: 0 var(--ui-space-2);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-3);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-1);
+}

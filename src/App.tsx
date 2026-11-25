@@ -18,6 +18,7 @@ import { PreviewStage } from './features/PreviewStage.tsx';
 import { ArtworkSearchModal } from './features/ArtworkSearchModal.tsx';
 import { ExportModal } from './features/ExportModal.tsx';
 import { StyleEditor } from './features/StyleEditor.tsx';
+import { encodeSetlist } from './share/payload.ts';
 import { ArtworkNoticeModal } from './features/ArtworkNoticeModal.tsx';
 import type { EditorTab } from './features/StyleEditor.tsx';
 import { TrackMenu } from './features/TrackMenu.tsx';
@@ -39,7 +40,7 @@ const isTxt = (name: string) => /\.txt$/i.test(name);
 const DEV_DUMMY_PLAYLIST = import.meta.env.DEV && new URLSearchParams(location.search).get('qr') === 'dummy'
   ? 'https://www.youtube.com/playlist?list=PLdummy0000000000000000000000000000' : null;
 
-export interface ArtworkOverride { url: string | null; match: Exclude<ArtworkMatch, 'pending'> }
+export interface ArtworkOverride { url: string | null; match: Exclude<ArtworkMatch, 'pending'>; trackId: number | null }
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('idle');
@@ -81,7 +82,7 @@ export default function App() {
     if (overrides.size === 0) return fetcher.tracks;
     return fetcher.tracks.map((t, i) => {
       const o = overrides.get(i);
-      return o ? { ...t, artworkUrl: o.url, artworkMatch: o.match } : t;
+      return o ? { ...t, artworkUrl: o.url, artworkMatch: o.match, itunesTrackId: o.trackId } : t;
     });
   }, [phase, fetcher.tracks, overrides]);
 
@@ -155,6 +156,16 @@ export default function App() {
     e.stopPropagation();
     setMenu({ index, x: e.clientX, y: e.clientY });
   }, []);
+
+  // Shared page link: hidden tracks are left out; iTunes IDs only for exact artwork matches (when artwork is on)
+  const shareUrl = `${location.origin}${import.meta.env.BASE_URL}${encodeSetlist({
+    eventName: metadata.eventName, djName: metadata.djName, date: metadata.date,
+    tracks: tracks.flatMap((t, i) => (hidden.has(i) ? [] : [{
+      title: t.title ?? '', artist: t.artist ?? '', bpm: t.bpm ?? null, time: t.time || null,
+      itunesId: showArtwork && t.artworkMatch === 'exact' ? t.itunesTrackId ?? null : null,
+    }])),
+    youtubePlaylist: playlist.createdUrl,
+  })}`;
 
   const exportBaseName = `${metadata.eventName || 'setlist'}_${metadata.date.replace(/\D/g, '')}`;
   const loaded = phase === 'loaded' && tracks.length > 0;
@@ -258,6 +269,7 @@ export default function App() {
           slices={slices}
           imageProps={imageProps}
           baseName={exportBaseName}
+          shareUrl={shareUrl}
           onClose={() => setExportOpen(false)}
         />
       )}

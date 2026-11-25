@@ -5,7 +5,7 @@ import { SetlistImage } from '../image/SetlistImage.tsx';
 import { canShareFiles, captureImage, downloadBlob, extensionOf, fitFileSize, safeFileName, shareFiles, zipBlobs } from '../core/exportImage.ts';
 import { MAX_IMAGES_PER_POST } from '../core/presets.ts';
 import { Button, ErrorText, Modal, Progress, Segmented } from '../ui/controls.tsx';
-import { Check, Share } from '../ui/icons.tsx';
+import { Check, Link, Share } from '../ui/icons.tsx';
 import { Scaled } from './Scaled.tsx';
 import styles from './ExportModal.module.css';
 
@@ -15,7 +15,11 @@ type Step = { kind: 'select' } | { kind: 'exporting'; done: number } | { kind: '
 
 const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
 
-export function ExportModal({ slices, imageProps, baseName, onClose }: { slices: PageSlice[]; imageProps: ImageBase; baseName: string; onClose: () => void }) {
+export function ExportModal({ slices, imageProps, baseName, shareUrl, onClose }: { slices: PageSlice[]; imageProps: ImageBase; baseName: string; shareUrl: string; onClose: () => void }) {
+  const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(shareUrl); setCopied('ok'); } catch { setCopied('failed'); }
+  };
   const shareSupported = canShareFiles([new File([''], 'probe.png', { type: 'image/png' })]);
   const [delivery, setDelivery] = useState<Delivery>(isMobile() && shareSupported ? 'share' : 'zip');
   const [step, setStep] = useState<Step>({ kind: 'select' });
@@ -83,6 +87,13 @@ export function ExportModal({ slices, imageProps, baseName, onClose }: { slices:
       )}
 
       {step.kind === 'select' && <Button variant="primary" block onClick={start}><Share />Export</Button>}
+      {step.kind === 'select' && (
+        <div className={styles.shareLink}>
+          <span className={styles.shareLabel}>共有ページ</span>
+          <Button variant="ghost" onClick={() => void copyLink()}>{copied === 'ok' ? <Check /> : <Link />}{copied === 'ok' ? 'コピーしました' : 'リンクをコピー'}</Button>
+        </div>
+      )}
+      {copied === 'failed' && <input className={styles.shareUrl} readOnly value={shareUrl} aria-label="共有ページのリンク" onFocus={(e) => e.currentTarget.select()} />}
       {step.kind === 'exporting' && (
         <div className={styles.progressRow}>
           <div className={styles.progress}><Progress value={step.done} max={slices.length} /></div>

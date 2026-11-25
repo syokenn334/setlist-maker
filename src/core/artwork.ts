@@ -21,6 +21,8 @@ export interface ArtworkResult {
   matchedTitle?: string;
   matchedArtist?: string;
   album?: string;
+  /** iTunes の曲 ID (共有ページで iTunes Store へのリンクとジャケットを引き直すのに使う) */
+  trackId?: number;
 }
 
 // --- 正規化と照合 ---
@@ -91,6 +93,7 @@ async function throttledFetch(url: string): Promise<Response> {
 const ITUNES_PARAMS = { entity: 'musicTrack', country: 'jp', lang: 'ja_jp' };
 
 interface ITunesTrack {
+  trackId: number;
   trackName: string;
   artistName: string;
   collectionName: string;
@@ -117,6 +120,7 @@ export interface ArtworkCandidate {
   title: string;
   artist: string;
   album: string;
+  trackId: number;
   /** 照合先の曲に対する一致の度合い (指定時のみ) */
   match?: Exclude<ArtworkMatch, 'pending'>;
 }
@@ -132,7 +136,7 @@ export async function searchItunesMulti(
     if (track?.artist && track?.title) {
       match = !artistMatches(track.artist, t.artistName) ? 'none' : versionMatches(track.title, t.trackName) ? 'exact' : 'substitute';
     }
-    return { url: big(t.artworkUrl100), title: t.trackName, artist: t.artistName, album: t.collectionName, match };
+    return { url: big(t.artworkUrl100), title: t.trackName, artist: t.artistName, album: t.collectionName, trackId: t.trackId, match };
   });
   const rank = { exact: 0, substitute: 1, none: 2 } as const;
   return track ? results.sort((a, b) => rank[a.match ?? 'none'] - rank[b.match ?? 'none']) : results;
@@ -150,12 +154,12 @@ export async function fetchArtwork(artist: string, title: string): Promise<Artwo
     const sameArtist = results.filter((r) => artistMatches(artist, r.artistName));
     const exact = sameArtist.find((r) => versionMatches(title, r.trackName));
     if (exact) {
-      return { url: big(exact.artworkUrl100), match: 'exact', query, matchedTitle: exact.trackName, matchedArtist: exact.artistName, album: exact.collectionName };
+      return { url: big(exact.artworkUrl100), match: 'exact', query, matchedTitle: exact.trackName, matchedArtist: exact.artistName, album: exact.collectionName, trackId: exact.trackId };
     }
     if (sameArtist[0]) {
       // Looser queries only drop the version notation, so they cannot find an exact match: stop here
       const r = sameArtist[0];
-      substitute = { url: big(r.artworkUrl100), match: 'substitute', query, matchedTitle: r.trackName, matchedArtist: r.artistName, album: r.collectionName };
+      substitute = { url: big(r.artworkUrl100), match: 'substitute', query, matchedTitle: r.trackName, matchedArtist: r.artistName, album: r.collectionName, trackId: r.trackId };
       break;
     }
   }

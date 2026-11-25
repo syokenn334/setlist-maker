@@ -37,7 +37,7 @@ export function useArtworkFetcher() {
         try {
           const result = await fetchArtwork(artist, title);
           if (controller.signal.aborted) return;
-          tracks[i] = { ...tracks[i], artworkUrl: result.url, artworkMatch: result.match };
+          tracks[i] = { ...tracks[i], artworkUrl: result.url, artworkMatch: result.match, itunesTrackId: result.trackId ?? null };
         } catch {
           tracks[i] = { ...tracks[i], artworkMatch: 'none' };
         }

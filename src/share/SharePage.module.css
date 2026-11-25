@@ -1,0 +1,213 @@
+/* Shared setlist page (Figma: setlist / 11 共有ページ S-D1 / S-M1) */
+.page {
+  height: 100%;
+  background: var(--ui-bg-app);
+  overflow-y: auto;
+}
+
+.column {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 72px var(--ui-space-5) var(--ui-space-8);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  padding-bottom: var(--ui-space-5);
+  border-bottom: 2px solid var(--ui-accent-solid);
+}
+
+.event {
+  font-size: 40px;
+  line-height: 1.25;
+  font-weight: var(--ui-font-bold);
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  font-size: var(--ui-font-size-3);
+  color: var(--ui-text-secondary);
+}
+
+.count {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding-top: var(--ui-space-5);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-4);
+  min-height: 72px;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: rgb(255 255 255 / 0.05);
+}
+
+.number {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: var(--ui-font-size-2);
+  color: var(--ui-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.artwork {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title,
+.artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  font-size: var(--ui-font-size-3);
+  font-weight: var(--ui-font-bold);
+}
+
+.artist {
+  font-size: var(--ui-font-size-2);
+  color: var(--ui-text-secondary);
+}
+
+.metaDesktop,
+.metaMobile {
+  display: flex;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-font-size-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaDesktop {
+  flex-shrink: 0;
+  gap: var(--ui-space-4);
+  text-align: right;
+}
+
+/* Fixed widths so the columns line up even when a value is missing */
+.metaDesktop .bpm {
+  width: 3ch;
+}
+
+.metaDesktop .time {
+  min-width: 5ch;
+}
+
+.metaMobile {
+  display: none;
+}
+
+.bpm {
+  color: var(--ui-accent-solid);
+}
+
+.time {
+  color: var(--ui-text-secondary);
+}
+
+/* Official badge: 30px high (the minimum for digital use), at least 1/10 of its height clear around it */
+.badge {
+  flex-shrink: 0;
+  display: block;
+  padding: 3px;
+}
+
+.badge img {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+
+/* Same width as the badge (artwork is 139.86 x 41) plus its clear space */
+.badgeSpace {
+  flex-shrink: 0;
+  width: calc(30px * 139.86 / 41 + 6px);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-5);
+  padding-top: var(--ui-space-6);
+}
+
+.link {
+  font-size: var(--ui-font-size-1);
+  color: var(--ui-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.invalid {
+  margin-bottom: var(--ui-space-3);
+  color: var(--ui-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .column {
+    padding: var(--ui-space-6) var(--ui-space-4) var(--ui-space-7);
+  }
+
+  .event {
+    font-size: 28px;
+  }
+
+  .sub {
+    font-size: var(--ui-font-size-2);
+  }
+
+  .row {
+    gap: var(--ui-space-3);
+    min-height: 64px;
+    padding: var(--ui-space-2);
+  }
+
+  .artwork {
+    width: 48px;
+    height: 48px;
+  }
+
+  .title {
+    font-size: var(--ui-font-size-2);
+  }
+
+  .artist {
+    font-size: var(--ui-font-size-1);
+  }
+
+  .metaDesktop {
+    display: none;
+  }
+
+  .metaMobile {
+    display: flex;
+    font-size: var(--ui-font-size-1);
+  }
+}
